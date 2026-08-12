@@ -197,10 +197,17 @@
       .commute h2 { margin: 0 0 0.2rem; }
       .commute-form {
         display: grid;
-        grid-template-columns: 1fr 1fr auto;
+        grid-template-columns: 1.4fr 0.8fr 0.7fr auto;
         gap: 0.5rem;
         margin-top: 0.85rem;
         align-items: end;
+      }
+      .dest-hint {
+        margin: 0.35rem 0 0;
+        font-size: 0.72rem;
+        color: var(--muted);
+        font-weight: 400;
+        min-height: 1.1em;
       }
       .commute-form label {
         display: flex;
@@ -294,10 +301,70 @@
         font-size: 1.2rem;
         margin-top: 0.15rem;
       }
-      @media (max-width: 960px) {
-        .commute, .commute-form, .commute-metrics { grid-template-columns: 1fr 1fr; }
-        .commute { grid-template-columns: 1fr; }
+      .alt-routes {
+        margin-top: 0.75rem;
+        display: none;
       }
+      .alt-routes.show { display: block; }
+      .alt-routes .alt-label {
+        font-size: 0.72rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 0.45rem;
+        font-weight: 500;
+      }
+      .alt-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+      }
+      .alt-chip {
+        font-family: inherit;
+        font-size: 0.78rem;
+        font-weight: 600;
+        padding: 0.32rem 0.65rem;
+        border-radius: 999px;
+        border: 1px solid rgba(94, 228, 168, 0.35);
+        background: rgba(94, 228, 168, 0.08);
+        color: var(--good);
+        cursor: pointer;
+        transition: border-color 0.15s, background 0.15s, transform 0.15s;
+      }
+      .alt-chip:hover {
+        border-color: rgba(94, 228, 168, 0.6);
+        background: rgba(94, 228, 168, 0.14);
+        transform: translateY(-1px);
+      }
+      .alt-chip .pct {
+        opacity: 0.75;
+        font-weight: 500;
+        margin-left: 0.25rem;
+      }
+      @media (max-width: 960px) {
+        .commute, .commute-metrics { grid-template-columns: 1fr 1fr; }
+        .commute-form { grid-template-columns: 1fr 1fr; }
+        .commute { grid-template-columns: 1fr; }
+        .commute-form button { grid-column: 1 / -1; }
+      }
+
+      .briefing {
+        background:
+          linear-gradient(150deg, rgba(212,175,55,0.12), transparent 45%),
+          var(--glass);
+      }
+      .briefing-body {
+        font-size: 0.92rem;
+        line-height: 1.55;
+        color: #e6e1d7;
+      }
+      .briefing-body p { margin: 0 0 0.5rem; }
+      .briefing-body p:last-child { margin-bottom: 0; }
+      .briefing-body ul, .briefing-body ol {
+        margin: 0.3rem 0 0.5rem;
+        padding-left: 1.2rem;
+      }
+      .briefing-body strong { color: var(--accent-hi); }
 
       .kpis {
         display: grid;
@@ -441,7 +508,6 @@
         color: var(--accent-hi);
       }
 
-      .report-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
       button, .btn {
         font-family: inherit;
         background: linear-gradient(180deg, #f0d78c, #d4af37);
@@ -469,13 +535,6 @@
         filter: none;
       }
 
-      .report-text {
-        margin-top: 0.8rem;
-        line-height: 1.55;
-        color: #e5dfd4;
-        font-size: 0.94rem;
-        white-space: pre-wrap;
-      }
       .status {
         color: var(--muted);
         font-size: 0.78rem;
@@ -483,47 +542,6 @@
         margin-top: 0.45rem;
         min-height: 1.1em;
       }
-
-      .pdf-shell {
-        margin-top: 0.85rem;
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        overflow: hidden;
-        background: #050505;
-        min-height: 420px;
-        display: none;
-        animation: rise 0.4s ease both;
-        box-shadow: var(--shadow);
-      }
-      .pdf-shell.show { display: block; }
-      .pdf-toolbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.5rem 0.75rem;
-        border-bottom: 1px solid var(--line);
-        background: rgba(255,255,255,0.03);
-        font-size: 0.78rem;
-        color: var(--muted);
-      }
-      .pdf-frame {
-        width: 100%;
-        height: min(62vh, 640px);
-        border: 0;
-        background: #0a0a0a;
-      }
-      .pdf-placeholder {
-        margin-top: 0.85rem;
-        border: 1px dashed rgba(212,175,55,0.28);
-        border-radius: 14px;
-        padding: 1.2rem 1.1rem;
-        color: var(--muted);
-        font-size: 0.8rem;
-        font-weight: 400;
-        line-height: 1.45;
-        background: rgba(255,255,255,0.02);
-      }
-      .pdf-placeholder[hidden] { display: none !important; }
 
       .map-meaning {
         margin: 0 0 0.8rem;
@@ -770,37 +788,73 @@
       <main class="canvas">
         <div class="canvas-inner">
           <p class="problem-banner">
-            MARTA's app says when a bus is <em>supposed</em> to show up.
-            It won't tell you whether that route has actually been showing up.
-            <strong>Should you trust Route 46 — or eat the Uber?</strong>
+            You need to be somewhere on time. MARTA won't tell you which routes
+            that get you there are actually keeping their word right now.
+            <strong>Where are you going — and should you trust the bus?</strong>
           </p>
 
           <section class="panel commute" id="commuteCard">
             <div>
-              <h2>Do I take this bus?</h2>
-              <div class="meta">Live on-time % · ghost no-shows · last GPS</div>
+              <h2>Can I make it on time?</h2>
+              <div class="meta">Destination → routes that serve it → live reliability</div>
               <form class="commute-form" id="commuteForm">
                 <label>
-                  Route
-                  <input id="commuteRoute" name="route" value="46" list="routeHints" required />
+                  To
+                  <input
+                    id="commuteDest"
+                    name="destination"
+                    value="Georgia Tech"
+                    list="stopHints"
+                    placeholder="Georgia Tech, North Ave…"
+                    required
+                    autocomplete="off"
+                  />
                 </label>
                 <label>
                   Arrive by
                   <input id="commuteArrive" name="arrive_by" value="09:30" placeholder="09:30" />
                 </label>
+                <label>
+                  Route <span style="opacity:0.6;font-weight:500">(opt)</span>
+                  <input id="commuteRoute" name="route" value="46" list="routeHints" placeholder="46" />
+                </label>
                 <button type="submit" id="commuteBtn">Check</button>
               </form>
+              <p class="dest-hint" id="destHint">Pick a MARTA stop near where you need to be.</p>
+              <datalist id="stopHints"></datalist>
               <datalist id="routeHints"></datalist>
+              <input type="hidden" id="commuteStopId" value="" />
             </div>
             <div>
               <div class="verdict-box" id="verdictBox">
                 <div class="kicker">Verdict</div>
-                <p class="headline" id="verdictHeadline">Checking Route 46…</p>
-                <p class="reason" id="verdictReason">Pulling on-time %, scheduled no-shows, and last GPS.</p>
+                <p class="headline" id="verdictHeadline">Checking your trip…</p>
+                <p class="reason" id="verdictReason">Finding routes to your destination, then scoring live reliability.</p>
               </div>
               <div class="commute-metrics" id="commuteMetrics"></div>
+              <div class="alt-routes" id="altRoutes">
+                <div class="alt-label" id="altLabel">Better routes to your destination</div>
+                <div class="alt-chips" id="altChips"></div>
+              </div>
             </div>
           </section>
+          <section class="panel briefing" id="briefingCard">
+            <div class="panel-head">
+              <div>
+                <h2>Campus briefing · Georgia Tech</h2>
+                <div class="meta" id="briefingMeta">
+                  Written by Gemini on a Render Workflow · data from Tiger
+                </div>
+              </div>
+              <button type="button" class="secondary" id="briefingBtn">
+                Regenerate
+              </button>
+            </div>
+            <div class="briefing-body md" id="briefingBody">
+              <p class="meta">Loading the latest briefing…</p>
+            </div>
+          </section>
+
           <div class="kpis">
             <div class="kpi" id="kpiRoutes">
               <div class="label">Routes tracked</div>
@@ -869,31 +923,6 @@
             </div>
           </section>
 
-          <section class="panel">
-            <div class="panel-head">
-              <div>
-                <h2>Reliability report</h2>
-                <div class="meta">Gemini summary + on-screen PDF</div>
-              </div>
-              <div class="report-actions">
-                <button type="button" id="reportBtn">Generate card</button>
-                <button type="button" class="secondary" id="pdfBtn">Preview PDF</button>
-                <button type="button" class="secondary" id="pdfDownloadBtn" hidden>Download</button>
-              </div>
-            </div>
-            <div class="status" id="reportStatus"></div>
-            <div class="report-text" id="reportBody" hidden></div>
-            <div class="pdf-shell" id="pdfShell">
-              <div class="pdf-toolbar">
-                <span id="pdfLabel">PDF preview</span>
-                <button type="button" class="secondary" id="pdfCloseBtn" style="padding:0.3rem 0.55rem;font-size:0.75rem">Hide</button>
-              </div>
-              <iframe class="pdf-frame" id="pdfFrame" title="Transit Ledger ATL report PDF"></iframe>
-            </div>
-            <div class="pdf-placeholder" id="pdfEmpty">
-              No PDF loaded yet. Use Preview PDF to generate a report card and view it here.
-            </div>
-          </section>
         </div>
       </main>
 
@@ -904,12 +933,12 @@
         </div>
         <div class="chat-log" id="chatLog">
           <div class="chat-empty" id="chatEmpty">
-            Ask “is Route 46 trustworthy right now?” or about ghosts and gaps.
+            Ask “can I make Georgia Tech by 9:30?” or about ghosts and gaps.
           </div>
         </div>
         <div class="chat-composer">
           <div class="hints">
-            <button type="button" data-q="Is Route 46 trustworthy right now? I have a 9:30 class.">46 vs Uber</button>
+            <button type="button" data-q="I need to get to Georgia Tech by 9:30. Should I trust Route 46 or take an Uber?">GT by 9:30</button>
             <button type="button" data-q="Any ghost buses right now?">Ghost buses</button>
             <button type="button" data-q="What are the worst routes today?">Worst today</button>
             <button type="button" data-q="How reliable is route 20 over the last 4 hours?">Route 20</button>
@@ -932,7 +961,6 @@
         "#d4af37", "#5ee4a8", "#f0d78c", "#ff7a7a", "#c4b5a0",
         "#8ecae6", "#e9c46a", "#a8dadc", "#f4a261", "#9a958c",
       ];
-      let pdfObjectUrl = null;
       let chartInstance = null;
 
       function setKpi(id, value, hint) {
@@ -955,21 +983,76 @@
         }
       }
 
+      let stopSearchTimer = null;
+      let lastStopHits = [];
+
+      async function searchDestinationStops(q) {
+        const list = document.getElementById("stopHints");
+        const hint = document.getElementById("destHint");
+        if (!q || q.length < 2) {
+          list.innerHTML = "";
+          return;
+        }
+        try {
+          const res = await fetch(`/api/stops?q=${encodeURIComponent(q)}`);
+          const data = await res.json();
+          lastStopHits = data.stops || [];
+          list.innerHTML = "";
+          for (const s of lastStopHits) {
+            const opt = document.createElement("option");
+            opt.value = s.name;
+            list.appendChild(opt);
+          }
+          const n = lastStopHits.length;
+          hint.textContent = n
+            ? `${n} matching stop${n === 1 ? "" : "s"} — we'll score routes that serve nearby.`
+            : "No stops matched — try “North Ave”, “Five Points”, “Georgia Tech”.";
+        } catch {
+          hint.textContent = "Stop search unavailable — restart npm run web.";
+        }
+      }
+
+      document.getElementById("commuteDest").addEventListener("input", (e) => {
+        document.getElementById("commuteStopId").value = "";
+        clearTimeout(stopSearchTimer);
+        const q = e.target.value.trim();
+        stopSearchTimer = setTimeout(() => searchDestinationStops(q), 220);
+      });
+
+      document.getElementById("commuteDest").addEventListener("change", () => {
+        const name = document.getElementById("commuteDest").value.trim().toLowerCase();
+        const hit = lastStopHits.find((s) => s.name.toLowerCase() === name);
+        document.getElementById("commuteStopId").value = hit ? hit.id : "";
+      });
+
       async function checkCommute() {
+        const destination = document.getElementById("commuteDest").value.trim();
+        const stopId = document.getElementById("commuteStopId").value.trim();
         const route = document.getElementById("commuteRoute").value.trim();
         const arrive = document.getElementById("commuteArrive").value.trim();
         const box = document.getElementById("verdictBox");
         const headline = document.getElementById("verdictHeadline");
         const reason = document.getElementById("verdictReason");
         const metrics = document.getElementById("commuteMetrics");
+        const altBox = document.getElementById("altRoutes");
+        const altChips = document.getElementById("altChips");
+        const altLabel = document.getElementById("altLabel");
+        const hint = document.getElementById("destHint");
         const btn = document.getElementById("commuteBtn");
-        if (!route) return;
+        if (!destination && !route) return;
         btn.disabled = true;
-        headline.textContent = `Checking Route ${route}…`;
-        reason.textContent = "On-time %, scheduled no-shows, last GPS.";
+        headline.textContent = destination
+          ? `Finding a reliable way to ${destination}…`
+          : `Checking Route ${route}…`;
+        reason.textContent = "Matching stops, scoring routes that serve them.";
         box.className = "verdict-box";
+        altBox.classList.remove("show");
+        altChips.innerHTML = "";
         try {
-          const qs = new URLSearchParams({ route });
+          const qs = new URLSearchParams();
+          if (destination) qs.set("destination", destination);
+          if (stopId) qs.set("stop_id", stopId);
+          if (route) qs.set("route", route);
           if (arrive) qs.set("arrive_by", arrive);
           const res = await fetch(`/api/commute?${qs}`);
           const raw = await res.text();
@@ -980,14 +1063,21 @@
             throw new Error(
               res.ok
                 ? "Server returned a non-JSON response. Restart npm run web."
-                : `Commute API ${res.status}. Restart npm run web to pick up /api/commute.`
+                : `Commute API ${res.status}. Restart npm run web.`
             );
           }
           if (!res.ok) throw new Error(data.error || "commute failed");
           const v = data.verdict || "toss_up";
           box.className = `verdict-box ${v}`;
-          headline.textContent = data.headline || `Route ${route}`;
+          headline.textContent = data.headline || (route ? `Route ${route}` : "Verdict");
           reason.textContent = data.reason || "";
+          if (data.destination?.stop_name) {
+            hint.textContent = `Matched stop: ${data.destination.stop_name} · ${data.destination.candidate_route_count} routes nearby`;
+            document.getElementById("commuteStopId").value = data.destination.stop_id || "";
+          }
+          if (data.route) {
+            document.getElementById("commuteRoute").value = data.route;
+          }
           const m = data.metrics || {};
           const ghosts =
             m.expected_trips > 0
@@ -1004,10 +1094,37 @@
               "Avg delay",
               m.avg_delay_min == null ? "—" : `${m.avg_delay_min} min`
             );
+          const alts = Array.isArray(data.alternativeRoutes)
+            ? data.alternativeRoutes
+            : [];
+          const showAlts =
+            (v === "take_uber" || v === "toss_up" || v === "no_service") &&
+            alts.length;
+          if (showAlts) {
+            altLabel.textContent = data.destination
+              ? "Better routes to your destination"
+              : "Most reliable routes right now";
+            altChips.innerHTML = "";
+            for (const a of alts.slice(0, 3)) {
+              const chip = document.createElement("button");
+              chip.type = "button";
+              chip.className = "alt-chip";
+              const pct =
+                a.on_time_pct == null ? "—" : `${a.on_time_pct}%`;
+              chip.innerHTML = `Route ${a.route_id}<span class="pct">${pct}</span>`;
+              chip.addEventListener("click", () => {
+                document.getElementById("commuteRoute").value = a.route_id;
+                checkCommute();
+              });
+              altChips.appendChild(chip);
+            }
+            altBox.classList.add("show");
+          }
         } catch (err) {
           box.className = "verdict-box toss_up";
-          headline.textContent = "Could not score this route";
+          headline.textContent = "Could not plan this trip";
           reason.textContent = err.message;
+          altBox.classList.remove("show");
         } finally {
           btn.disabled = false;
         }
@@ -1230,77 +1347,58 @@
         btn.addEventListener("click", () => ask(btn.dataset.q));
       });
 
-      document.getElementById("reportBtn").addEventListener("click", async () => {
-        const btn = document.getElementById("reportBtn");
-        const status = document.getElementById("reportStatus");
-        const body = document.getElementById("reportBody");
-        btn.disabled = true;
-        status.textContent = "Writing report card…";
-        body.hidden = true;
+      async function loadBriefing() {
+        const body = document.getElementById("briefingBody");
+        const meta = document.getElementById("briefingMeta");
         try {
-          const res = await fetch("/api/report");
+          const res = await fetch("/api/briefing/latest");
           const data = await res.json();
-          if (!res.ok) throw new Error(data.error || "report failed");
-          body.textContent = data.report;
-          body.hidden = false;
-          status.textContent = `Generated ${new Date(data.generated_at).toLocaleString()}`;
-        } catch (err) {
-          status.textContent = `Report error: ${err.message}`;
-        } finally {
-          btn.disabled = false;
-        }
-      });
-
-      async function renderPdf() {
-        const status = document.getElementById("reportStatus");
-        const shell = document.getElementById("pdfShell");
-        const empty = document.getElementById("pdfEmpty");
-        const frame = document.getElementById("pdfFrame");
-        const dl = document.getElementById("pdfDownloadBtn");
-        const btn = document.getElementById("pdfBtn");
-        btn.disabled = true;
-        status.textContent = "Rendering PDF (Gemini + chart)…";
-        try {
-          const res = await fetch("/api/report/pdf?inline=1");
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.error || `PDF failed (${res.status})`);
+          if (!res.ok) throw new Error(data.error || "briefing failed");
+          if (!data.briefing) {
+            body.innerHTML =
+              '<p class="meta">No briefing yet — hit Regenerate to run the workflow.</p>';
+            return;
           }
-          const blob = await res.blob();
-          if (pdfObjectUrl) URL.revokeObjectURL(pdfObjectUrl);
-          pdfObjectUrl = URL.createObjectURL(blob);
-          frame.src = pdfObjectUrl;
-          shell.classList.add("show");
-          empty.hidden = true;
-          dl.hidden = false;
-          document.getElementById("pdfLabel").textContent =
-            `Preview · ${new Date().toLocaleTimeString()}`;
-          status.textContent = "PDF ready — preview below.";
-          shell.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          body.innerHTML = highlightStats(
+            marked.parse(data.briefing.body_md, { breaks: true })
+          );
+          meta.textContent =
+            "Written by Gemini on a Render Workflow · data from Tiger · " +
+            new Date(data.briefing.generated_at).toLocaleTimeString();
         } catch (err) {
-          status.textContent = `PDF error: ${err.message}`;
-        } finally {
-          btn.disabled = false;
+          body.innerHTML = `<p class="meta">Briefing error: ${err.message}</p>`;
         }
       }
 
-      document.getElementById("pdfBtn").addEventListener("click", renderPdf);
-
-      document.getElementById("pdfDownloadBtn").addEventListener("click", () => {
-        if (!pdfObjectUrl) return;
-        const a = document.createElement("a");
-        a.href = pdfObjectUrl;
-        a.download = `marta-report-${new Date().toISOString().slice(0, 10)}.pdf`;
-        a.click();
-      });
-
-      document.getElementById("pdfCloseBtn").addEventListener("click", () => {
-        document.getElementById("pdfShell").classList.remove("show");
-        document.getElementById("pdfEmpty").hidden = false;
+      document.getElementById("briefingBtn").addEventListener("click", async () => {
+        const btn = document.getElementById("briefingBtn");
+        const body = document.getElementById("briefingBody");
+        btn.disabled = true;
+        body.innerHTML =
+          '<p class="meta">Running workflow: Tiger stats → Gemini → store…</p>';
+        try {
+          const res = await fetch("/api/briefing/run", { method: "POST" });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "workflow failed");
+          if (data.status === "workflow_started") {
+            // Durable run on Render — poll for the stored result.
+            for (let i = 0; i < 15; i++) {
+              await new Promise((r) => setTimeout(r, 2000));
+              await loadBriefing();
+            }
+          } else {
+            await loadBriefing();
+          }
+        } catch (err) {
+          body.innerHTML = `<p class="meta">Workflow error: ${err.message}</p>`;
+        } finally {
+          btn.disabled = false;
+        }
       });
 
       loadChart();
       checkCommute();
+      loadBriefing();
 
       /* ===== Live map (isolated; safe to delete this block + map section) ===== */
       (function initLiveMap() {

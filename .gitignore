@@ -12,3 +12,5 @@ data/trips.txt
 data/calendar.txt
 data/calendar_dates.txt
 data/routes.txt
+data/stops.txt
+data/stop-routes.json

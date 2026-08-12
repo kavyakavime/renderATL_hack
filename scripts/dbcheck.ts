@@ -1,0 +1,10 @@
+import 'dotenv/config';
+import { createPool } from '../web/db.js';
+const pool = createPool();
+const q = async (sql: string) => (await pool.query(sql)).rows;
+console.log('vp last 10min:', await q("SELECT COUNT(*) FROM vehicle_positions WHERE time > NOW() - INTERVAL '10 minutes'"));
+console.log('td last 10min:', await q("SELECT COUNT(*) FROM trip_delays WHERE time > NOW() - INTERVAL '10 minutes'"));
+console.log('latest vp:', await q('SELECT MAX(time) FROM vehicle_positions'));
+console.log('latest bucket:', await q('SELECT MAX(bucket) FROM route_reliability_15m'));
+console.log('total vp:', await q('SELECT COUNT(*) FROM vehicle_positions'));
+await pool.end();

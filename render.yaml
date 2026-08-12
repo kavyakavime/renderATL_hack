@@ -17,6 +17,13 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      # Render Workflows trigger (campus briefing). Blueprints can't create
+      # workflow services yet — create via Dashboard > New > Workflow with
+      # start command `npm run workflows`, then set these two here:
+      - key: RENDER_API_KEY
+        sync: false
+      - key: RENDER_WORKFLOW_SLUG
+        sync: false
       - key: PORT
         value: "3000"
 

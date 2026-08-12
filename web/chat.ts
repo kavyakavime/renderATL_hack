@@ -7,7 +7,6 @@ import type pg from "pg";
 import {
   getGhostBuses,
   getHeadwayGaps,
-  getReliabilitySummary24h,
   getRouteReliability,
   getWorstRoutesToday,
 } from "./tools.js";
@@ -77,20 +76,29 @@ const toolDeclarations: FunctionDeclaration[] = [
   {
     name: "getCommuteVerdict",
     description:
-      "Decide whether a rider should trust a MARTA route right now or take an Uber. Use when asked if a route is trustworthy, bus vs Uber, or making a class/appointment. Returns take_bus / take_uber / toss_up / no_service with on-time %, ghost no-shows, and last vehicle.",
+      "Decide whether a rider should take a MARTA bus or an Uber to arrive on time. Prefer passing a destination (stop name like 'Georgia Tech' or 'North Ave Station'). Optionally include a preferred route. Returns take_bus / take_uber / toss_up / no_service with on-time %, ghost no-shows, destination-serving alternatives, and last vehicle.",
     parameters: {
       type: Type.OBJECT,
       properties: {
+        destination: {
+          type: Type.STRING,
+          description:
+            "Where the rider needs to go — a MARTA stop name fragment (e.g. 'Georgia Tech', 'Five Points', 'North Ave Station').",
+        },
+        stop_id: {
+          type: Type.STRING,
+          description: "Optional exact MARTA stop_id if known.",
+        },
         route: {
           type: Type.STRING,
-          description: "MARTA route short name (e.g. '46', '20', 'GOLD').",
+          description:
+            "Optional preferred MARTA route short name (e.g. '46', '20', 'GOLD'). If omitted with a destination, picks the most reliable route that serves it.",
         },
         arrive_by: {
           type: Type.STRING,
           description: "Optional arrival time as HH:MM (e.g. '09:30').",
         },
       },
-      required: ["route"],
     },
   },
 ];
@@ -120,11 +128,14 @@ async function runTool(
         String(args.route_id ?? args.route ?? "")
       );
     case "getCommuteVerdict":
-      return getCommuteVerdict(
-        pool,
-        String(args.route ?? args.route_id ?? ""),
-        String(args.arrive_by ?? args.arriveBy ?? "").trim() || undefined
-      );
+      return getCommuteVerdict(pool, {
+        route: String(args.route ?? args.route_id ?? "").trim() || undefined,
+        destination:
+          String(args.destination ?? args.to ?? "").trim() || undefined,
+        stop_id: String(args.stop_id ?? args.stopId ?? "").trim() || undefined,
+        arrive_by:
+          String(args.arrive_by ?? args.arriveBy ?? "").trim() || undefined,
+      });
     default:
       return { error: `Unknown tool: ${name}` };
   }
@@ -144,7 +155,7 @@ export async function askMartaChat(
   const systemInstruction = [
     "You are Transit Ledger ATL, an assistant for Atlanta MARTA bus/rail reliability.",
     "Use the provided tools to answer with real data from TimescaleDB.",
-    "If the user asks whether a route is trustworthy, bus vs Uber, or making a class/appointment, call getCommuteVerdict.",
+    "If the user asks whether a route is trustworthy, bus vs Uber, how to get somewhere on time, or making a class/appointment, call getCommuteVerdict with destination when a place is mentioned.",
     "Ghost buses are scheduled trips that never showed up on GPS — not feed glitches.",
     "Be concise. Cite route ids, on-time %, ghost counts, and delays when available.",
     "Format answers with light markdown: **bold** for route ids and percentages, numbered lists for rankings.",
@@ -209,62 +220,4 @@ export async function askMartaChat(
     config: { systemInstruction },
   });
   return (final.text ?? "").trim() || "No answer generated.";
-}
-
-/** Plain-English reliability report card from last-24h aggregates + ghosts. */
-export async function generateReportCard(pool: pg.Pool): Promise<{
-  report: string;
-  generated_at: string;
-}> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("GEMINI_API_KEY is required");
-  }
-
-  const [summary, ghosts, worst] = await Promise.all([
-    getReliabilitySummary24h(pool),
-    getGhostBuses(pool),
-    getWorstRoutesToday(pool),
-  ]);
-
-  const best = [...summary].sort(
-    (a, b) => Number(b.on_time_pct) - Number(a.on_time_pct)
-  )[0];
-  const worstRoute = summary[0];
-  let headwayNote: unknown = null;
-  if (worstRoute?.route_id) {
-    headwayNote = await getHeadwayGaps(pool, String(worstRoute.route_id));
-  }
-
-  const ai = new GoogleGenAI({ apiKey });
-  const prompt = [
-    "Write a short plain-English Transit Ledger ATL Reliability Report Card in 3-5 sentences.",
-    "Name the best and worst routes by on-time %, comment on overall system health,",
-    "and mention any notable ghost buses (scheduled trips that never showed on GPS) or service gaps if present.",
-    "Do not use markdown headings or bullet lists — just short paragraphs.",
-    "",
-    "DATA:",
-    JSON.stringify({
-      routes_24h: summary.slice(0, 25),
-      best_route: best ?? null,
-      worst_route: worstRoute ?? null,
-      worst_today: worst,
-      ghost_buses: { count: ghosts.count, sample: ghosts.buses.slice(0, 8) },
-      headway_gaps_worst_route: headwayNote,
-    }),
-  ].join("\n");
-
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: prompt,
-  });
-
-  const report =
-    (response.text ?? "").trim() ||
-    "Not enough reliability data yet to write a report card.";
-
-  return {
-    report,
-    generated_at: new Date().toISOString(),
-  };
 }

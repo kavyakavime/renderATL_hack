@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS routes (
 -- on-time = |delay_sec| <= 300 (5 minutes)
 -- ---------------------------------------------------------------------------
 
-CREATE MATERIALIZED VIEW route_reliability_15m
+CREATE MATERIALIZED VIEW IF NOT EXISTS route_reliability_15m
 WITH (timescaledb.continuous) AS
 SELECT
   time_bucket('15 minutes', time) AS bucket,

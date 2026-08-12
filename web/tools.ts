@@ -270,24 +270,3 @@ export async function getHeadwayGaps(pool: pg.Pool, routeId: string) {
           : `Found ${serviceGaps.length} service gap(s) over 15 minutes (largest ${maxGapMin} min).`,
   };
 }
-
-/** Aggregated reliability for report card (last 24h). */
-export async function getReliabilitySummary24h(pool: pg.Pool) {
-  const result = await pool.query(
-    `
-    SELECT
-      route_id,
-      ROUND(AVG(avg_delay_sec)::numeric, 1) AS avg_delay_sec,
-      ROUND(AVG(on_time_pct)::numeric, 1) AS on_time_pct,
-      SUM(sample_count)::bigint AS sample_count,
-      MIN(bucket) AS first_bucket,
-      MAX(bucket) AS last_bucket
-    FROM route_reliability_15m
-    WHERE bucket >= NOW() - INTERVAL '24 hours'
-    GROUP BY route_id
-    HAVING SUM(sample_count) >= 3
-    ORDER BY AVG(on_time_pct) ASC NULLS LAST
-    `
-  );
-  return result.rows;
-}
