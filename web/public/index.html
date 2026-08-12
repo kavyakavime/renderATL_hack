@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>MARTA Receipts</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"></script>
     <style>
       :root {
         --bg: #0f1419;
@@ -83,23 +84,62 @@
         padding: 0.7rem 0.85rem;
         border-radius: 10px;
         line-height: 1.45;
-        white-space: pre-wrap;
         font-size: 0.95rem;
       }
       .bubble.user {
         background: #243041;
         align-self: flex-end;
         max-width: 85%;
+        white-space: pre-wrap;
       }
       .bubble.bot {
         background: #1e2a22;
         border: 1px solid color-mix(in srgb, var(--good) 35%, var(--line));
+        border-left: 3px solid var(--good);
         align-self: flex-start;
         max-width: 95%;
+      }
+      .bubble.bot.tone-worst {
+        border-left-color: #e86b6b;
+        background: #241a1a;
+      }
+      .bubble.bot.tone-ghost {
+        border-left-color: #94a3b8;
+        background: #1a1e24;
+      }
+      .bubble.bot.tone-gap {
+        border-left-color: #f5a623;
+        background: #241e14;
       }
       .bubble.error {
         background: #2a1a1a;
         border: 1px solid #5c2b2b;
+        white-space: pre-wrap;
+      }
+      .bubble.bot .md p { margin: 0 0 0.55rem; }
+      .bubble.bot .md p:last-child { margin-bottom: 0; }
+      .bubble.bot .md ol,
+      .bubble.bot .md ul {
+        margin: 0.35rem 0 0.55rem;
+        padding-left: 1.25rem;
+      }
+      .bubble.bot .md li { margin: 0.2rem 0; }
+      .bubble.bot .md strong { color: #fff; font-weight: 700; }
+      .bubble.bot .md h1,
+      .bubble.bot .md h2,
+      .bubble.bot .md h3 {
+        margin: 0.4rem 0 0.35rem;
+        font-size: 1rem;
+        color: var(--accent);
+      }
+      .stat-chip {
+        display: inline-block;
+        padding: 0.05rem 0.35rem;
+        border-radius: 4px;
+        background: color-mix(in srgb, var(--accent) 22%, transparent);
+        color: #ffd891;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
       }
       form {
         display: flex;
@@ -192,6 +232,7 @@
         <h2>Reliability report card</h2>
         <div class="report-actions">
           <button type="button" id="reportBtn">Generate Report Card</button>
+          <button type="button" class="secondary" id="pdfBtn">Download PDF Report</button>
           <button type="button" class="secondary" id="reportClearBtn" hidden>Clear</button>
         </div>
         <div class="status" id="reportStatus"></div>
@@ -312,11 +353,34 @@
         }
       }
 
-      function addBubble(text, kind) {
+      function chatTone(question) {
+        const q = (question || "").toLowerCase();
+        if (/ghost/.test(q)) return "tone-ghost";
+        if (/gap|headway/.test(q)) return "tone-gap";
+        if (/worst|reliab|on-time|route \d/.test(q)) return "tone-worst";
+        return "";
+      }
+
+      function highlightStats(html) {
+        // Emphasize standalone percentages like 29.2%
+        return html.replace(
+          /(\d+(?:\.\d+)?%)/g,
+          '<span class="stat-chip">$1</span>'
+        );
+      }
+
+      function addBubble(text, kind, tone) {
         const log = document.getElementById("chatLog");
         const el = document.createElement("div");
-        el.className = `bubble ${kind}`;
-        el.textContent = text;
+        el.className = `bubble ${kind}${tone ? " " + tone : ""}`;
+        if (kind === "bot" && window.marked) {
+          const wrap = document.createElement("div");
+          wrap.className = "md";
+          wrap.innerHTML = highlightStats(marked.parse(text, { breaks: true }));
+          el.appendChild(wrap);
+        } else {
+          el.textContent = text;
+        }
         log.appendChild(el);
         log.scrollTop = log.scrollHeight;
       }
@@ -333,7 +397,7 @@
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "chat failed");
-          addBubble(data.answer, "bot");
+          addBubble(data.answer, "bot", chatTone(question));
         } catch (err) {
           addBubble(err.message, "error");
         } finally {
@@ -379,6 +443,23 @@
         } finally {
           btn.disabled = false;
         }
+      });
+
+      document.getElementById("pdfBtn").addEventListener("click", () => {
+        const status = document.getElementById("reportStatus");
+        status.textContent = "Building PDF (calls Gemini)…";
+        // Navigate so the browser downloads the attachment
+        const a = document.createElement("a");
+        a.href = "/api/report/pdf";
+        a.download = "";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => {
+          if (status.textContent.includes("Building PDF")) {
+            status.textContent = "PDF download started.";
+          }
+        }, 1500);
       });
 
       document.getElementById("reportClearBtn").addEventListener("click", () => {

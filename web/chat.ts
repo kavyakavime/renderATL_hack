@@ -12,8 +12,8 @@ import {
   getWorstRoutesToday,
 } from "./tools.js";
 
-// gemini-2.5-flash is blocked for new API keys; 3.5 is the current flash tier.
-const MODEL = "gemini-3.5-flash";
+// Free-tier RPD on gemini-3.5-flash is only 20; flash-lite allows 500/day.
+const MODEL = "gemini-3.5-flash-lite";
 
 const toolDeclarations: FunctionDeclaration[] = [
   {
@@ -111,6 +111,7 @@ export async function askMartaChat(
     "You are MARTA Receipts, an assistant for Atlanta MARTA bus/rail reliability.",
     "Use the provided tools to answer with real data from TimescaleDB.",
     "Be concise. Cite route ids, on-time %, and delays when available.",
+    "Format answers with light markdown: **bold** for route ids and percentages, numbered lists for rankings.",
     "If data is empty, say the poller may not have run yet.",
   ].join(" ");
 

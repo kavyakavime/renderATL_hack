@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { askMartaChat, generateReportCard } from "./chat.js";
 import { createPool } from "./db.js";
+import { streamReportPdf } from "./reportPdf.js";
 import { getReliabilityChart } from "./tools.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -53,6 +54,21 @@ app.get("/api/report", async (_req, res) => {
     res.status(500).json({
       error: err instanceof Error ? err.message : "report failed",
     });
+  }
+});
+
+app.get("/api/report/pdf", async (_req, res) => {
+  try {
+    await streamReportPdf(pool, res);
+  } catch (err) {
+    console.error("/api/report/pdf", err);
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: err instanceof Error ? err.message : "pdf failed",
+      });
+    } else {
+      res.end();
+    }
   }
 });
 

@@ -123,6 +123,22 @@ export async function getHeadwayGaps(pool: pg.Pool, routeId: string) {
     return { route: "", hours: 2, threshold_min: 15, gaps: [], error: "route_id required" };
   }
 
+  const stats = await pool.query(
+    `
+    SELECT
+      count(*)::int AS row_count,
+      count(DISTINCT time)::int AS sighting_count,
+      count(DISTINCT vehicle_id)::int AS vehicle_count,
+      min(time) AS first_seen,
+      max(time) AS last_seen
+    FROM vehicle_positions
+    WHERE route_id = $1
+      AND time >= NOW() - INTERVAL '2 hours'
+    `,
+    [route]
+  );
+  const s = stats.rows[0] ?? {};
+
   const result = await pool.query(
     `
     WITH sightings AS (
@@ -144,24 +160,42 @@ export async function getHeadwayGaps(pool: pg.Pool, routeId: string) {
       ROUND(duration_min::numeric, 1) AS duration_min
     FROM gaps
     WHERE gap_start IS NOT NULL
-      AND duration_min > 15
     ORDER BY duration_min DESC
-    LIMIT 50
     `,
     [route]
   );
+
+  const allGaps = result.rows.map((r) => ({
+    start: r.gap_start,
+    end: r.gap_end,
+    duration_min: Number(r.duration_min),
+  }));
+  const maxGapMin = allGaps.length ? allGaps[0].duration_min : null;
+  const serviceGaps = allGaps
+    .filter((g) => g.duration_min > 15)
+    .slice(0, 50)
+    .map((g) => ({ ...g, service_gap: true as const }));
+
+  const sightingCount = Number(s.sighting_count ?? 0);
 
   return {
     route,
     hours: 2,
     threshold_min: 15,
-    gap_count: result.rows.length,
-    gaps: result.rows.map((r) => ({
-      start: r.gap_start,
-      end: r.gap_end,
-      duration_min: Number(r.duration_min),
-      service_gap: true,
-    })),
+    sighting_count: sightingCount,
+    vehicle_count: Number(s.vehicle_count ?? 0),
+    first_seen: s.first_seen ?? null,
+    last_seen: s.last_seen ?? null,
+    max_gap_min: maxGapMin,
+    gap_count: serviceGaps.length,
+    gaps: serviceGaps,
+    // Explicit so models don't narrate "no data" as "no gaps"
+    interpretation:
+      sightingCount === 0
+        ? "No vehicle sightings for this route in the last 2 hours — cannot assess headway gaps."
+        : serviceGaps.length === 0
+          ? `Sightings present (${sightingCount}); no gap exceeded ${15} minutes (largest was ${maxGapMin ?? "n/a"} min).`
+          : `Found ${serviceGaps.length} service gap(s) over 15 minutes (largest ${maxGapMin} min).`,
   };
 }
 
