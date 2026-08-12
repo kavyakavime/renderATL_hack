@@ -282,6 +282,93 @@ export function searchStops(
   return scored.slice(0, limit).map((s) => s.stop);
 }
 
+/**
+ * Landmarks riders actually type — GTFS stop names are street intersections
+ * ("NORTH AVE NW @ LUCKIE ST NW"), so "Georgia Tech" matches nothing without
+ * this. Each alias resolves to coords + a wider radius to catch the corridors
+ * around the landmark.
+ */
+const LANDMARKS: Array<{
+  keys: string[];
+  name: string;
+  lat: number;
+  lon: number;
+  radius_m: number;
+}> = [
+  {
+    keys: ["georgia tech", "gatech", "ga tech", "gt", "georgia institute of technology", "tech campus", "culc"],
+    name: "Georgia Tech campus",
+    lat: 33.7756,
+    lon: -84.3937,
+    radius_m: 900,
+  },
+  {
+    keys: ["tech square", "scheller"],
+    name: "Tech Square",
+    lat: 33.7767,
+    lon: -84.3893,
+    radius_m: 600,
+  },
+  {
+    keys: ["georgia state", "gsu"],
+    name: "Georgia State University",
+    lat: 33.7531,
+    lon: -84.3853,
+    radius_m: 600,
+  },
+  {
+    keys: ["airport", "hartsfield", "atl airport"],
+    name: "Airport Station",
+    lat: 33.6407,
+    lon: -84.4463,
+    radius_m: 600,
+  },
+  {
+    keys: ["ponce city market", "pcm"],
+    name: "Ponce City Market",
+    lat: 33.7726,
+    lon: -84.3665,
+    radius_m: 600,
+  },
+  {
+    keys: ["mercedes", "benz stadium", "mercedes-benz stadium"],
+    name: "Mercedes-Benz Stadium",
+    lat: 33.7554,
+    lon: -84.4008,
+    radius_m: 700,
+  },
+  {
+    keys: ["lenox", "buckhead mall"],
+    name: "Lenox Square",
+    lat: 33.8463,
+    lon: -84.3621,
+    radius_m: 700,
+  },
+  {
+    keys: ["piedmont park"],
+    name: "Piedmont Park",
+    lat: 33.7851,
+    lon: -84.3738,
+    radius_m: 700,
+  },
+  {
+    keys: ["little five points", "l5p"],
+    name: "Little Five Points",
+    lat: 33.7651,
+    lon: -84.3494,
+    radius_m: 600,
+  },
+];
+
+export function matchLandmark(query: string) {
+  const q = String(query || "").trim().toLowerCase();
+  if (!q) return null;
+  for (const lm of LANDMARKS) {
+    if (lm.keys.some((k) => q === k || q.includes(k))) return lm;
+  }
+  return null;
+}
+
 export type ResolvedDestination = {
   stop: StopInfo;
   nearby_stops: Array<StopInfo & { distance_m: number }>;
@@ -300,9 +387,19 @@ export function resolveDestination(
     radius_m?: number;
   }
 ): ResolvedDestination | { error: string } {
-  const radius = opts.radius_m ?? 450;
+  let radius = opts.radius_m ?? 450;
   let stop: StopInfo | null = null;
   let match: ResolvedDestination["match"] = "search";
+
+  // Landmark aliases win over raw stop-name search ("Georgia Tech" would
+  // otherwise match Georgia Piedmont Tech on Memorial Dr, or nothing).
+  if (!opts.stop_id && opts.destination && opts.lat == null) {
+    const lm = matchLandmark(opts.destination);
+    if (lm) {
+      opts = { ...opts, lat: lm.lat, lon: lm.lon, destination: undefined };
+      radius = Math.max(radius, lm.radius_m);
+    }
+  }
 
   if (opts.stop_id) {
     stop = index.stops.find((s) => s.id === opts.stop_id) ?? null;
