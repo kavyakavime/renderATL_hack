@@ -25,7 +25,8 @@ services:
     runtime: node
     plan: starter
     schedule: "*/1 * * * *"
-    buildCommand: NPM_CONFIG_PRODUCTION=false npm install && npx tsx -e "import { loadScheduleIndex } from './poller/schedule.js'; await loadScheduleIndex();"
+    # Keep build light — schedule index is built on first poll (cached under data/)
+    buildCommand: NPM_CONFIG_PRODUCTION=false npm install
     startCommand: npm run poll
     envVars:
       - key: NODE_VERSION
