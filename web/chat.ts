@@ -12,8 +12,8 @@ import {
   getWorstRoutesToday,
 } from "./tools.js";
 
-// Free-tier RPD on gemini-3.5-flash is only 20; flash-lite allows 500/day.
-const MODEL = "gemini-3.5-flash-lite";
+// Free-tier RPD on gemini-3.5-flash is only 20. Override with GEMINI_MODEL if needed.
+const MODEL = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
 
 const toolDeclarations: FunctionDeclaration[] = [
   {
