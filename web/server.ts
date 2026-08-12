@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { askMartaChat, generateReportCard } from "./chat.js";
 import { createPool } from "./db.js";
+import { getLatestVehicles } from "./mapVehicles.js";
 import { streamReportPdf } from "./reportPdf.js";
 import { getReliabilityChart } from "./tools.js";
 
@@ -70,6 +71,18 @@ app.get("/api/report/pdf", async (req, res) => {
     } else {
       res.end();
     }
+  }
+});
+
+app.get("/api/vehicles/latest", async (_req, res) => {
+  try {
+    const result = await getLatestVehicles(pool);
+    res.json(result);
+  } catch (err) {
+    console.error("/api/vehicles/latest", err);
+    res.status(500).json({
+      error: err instanceof Error ? err.message : "vehicles query failed",
+    });
   }
 });
 

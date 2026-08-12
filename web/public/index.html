@@ -12,6 +12,17 @@
     />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
     <style>
       :root {
         --bg: #0c1014;
@@ -304,6 +315,46 @@
         padding: 1rem;
       }
 
+      /* —— live map (isolated) —— */
+      .map-panel #busMap {
+        height: 380px;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        background: #0a0d11;
+        z-index: 1;
+      }
+      .map-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-top: 0.65rem;
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+      .map-legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+      }
+      .map-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        border: 1px solid rgba(255,255,255,0.35);
+      }
+      .map-dot.green { background: #3dd68c; }
+      .map-dot.yellow { background: #f5a623; }
+      .map-dot.red { background: #ff6b6b; }
+      .map-dot.gray { background: #94a3b8; }
+      .bus-marker {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 2px solid #fff;
+        box-shadow: 0 0 0 1px rgba(0,0,0,0.35);
+      }
+
       /* —— Cursor-like chat rail —— */
       .chat-rail {
         display: flex;
@@ -516,6 +567,22 @@
               <div class="board" id="pressureBoard"></div>
             </section>
           </div>
+
+          <section class="panel map-panel" id="liveMapSection">
+            <div class="panel-head">
+              <div>
+                <h2>Live fleet map</h2>
+                <div class="meta" id="mapStatus">Loading vehicles…</div>
+              </div>
+            </div>
+            <div id="busMap"></div>
+            <div class="map-legend">
+              <span><i class="map-dot green"></i> On-time &gt; 80%</span>
+              <span><i class="map-dot yellow"></i> 50–80%</span>
+              <span><i class="map-dot red"></i> &lt; 50%</span>
+              <span><i class="map-dot gray"></i> No reliability yet</span>
+            </div>
+          </section>
 
           <section class="panel">
             <div class="panel-head">
@@ -860,6 +927,90 @@
       });
 
       loadChart();
+
+      /* ===== Live map (isolated; safe to delete this block + map section) ===== */
+      (function initLiveMap() {
+        if (!window.L) {
+          const s = document.getElementById("mapStatus");
+          if (s) s.textContent = "Leaflet failed to load";
+          return;
+        }
+
+        const colorHex = {
+          green: "#3dd68c",
+          yellow: "#f5a623",
+          red: "#ff6b6b",
+          gray: "#94a3b8",
+        };
+
+        const map = L.map("busMap", {
+          zoomControl: true,
+          attributionControl: true,
+        }).setView([33.749, -84.388], 11);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 18,
+          attribution: "&copy; OpenStreetMap",
+        }).addTo(map);
+
+        const layer = L.layerGroup().addTo(map);
+        let firstFit = true;
+
+        function markerIcon(color) {
+          const c = colorHex[color] || colorHex.gray;
+          return L.divIcon({
+            className: "",
+            html: `<div class="bus-marker" style="background:${c}"></div>`,
+            iconSize: [12, 12],
+            iconAnchor: [6, 6],
+          });
+        }
+
+        async function refreshVehicles() {
+          const status = document.getElementById("mapStatus");
+          try {
+            const res = await fetch("/api/vehicles/latest");
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "map fetch failed");
+
+            layer.clearLayers();
+            const pts = [];
+            for (const v of data.vehicles || []) {
+              if (!Number.isFinite(v.lat) || !Number.isFinite(v.lon)) continue;
+              pts.push([v.lat, v.lon]);
+              const onTime =
+                v.on_time_pct == null ? "n/a" : `${Number(v.on_time_pct).toFixed(1)}%`;
+              const marker = L.marker([v.lat, v.lon], {
+                icon: markerIcon(v.color || "gray"),
+              });
+              marker.bindPopup(
+                `<strong>Route ${v.route_id ?? "—"}</strong><br/>` +
+                  `Vehicle ${v.vehicle_id}<br/>` +
+                  `On-time: ${onTime}`
+              );
+              marker.addTo(layer);
+            }
+
+            if (status) {
+              status.textContent = `${data.count || 0} vehicles · updated ${new Date(
+                data.generated_at || Date.now()
+              ).toLocaleTimeString()}`;
+            }
+
+            if (firstFit && pts.length) {
+              map.fitBounds(pts, { padding: [28, 28], maxZoom: 12 });
+              firstFit = false;
+            }
+          } catch (err) {
+            if (status) status.textContent = `Map error: ${err.message}`;
+          }
+        }
+
+        // Leaflet needs a paint after layout
+        setTimeout(() => map.invalidateSize(), 50);
+        refreshVehicles();
+        setInterval(refreshVehicles, 30000);
+      })();
     </script>
   </body>
 </html>
