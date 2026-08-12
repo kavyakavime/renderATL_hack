@@ -1,0 +1,31 @@
+{
+  "name": "marta-receipts",
+  "version": "1.0.0",
+  "description": "MARTA GTFS-RT reliability dashboard — poller, TimescaleDB, Gemini chat",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "poll": "tsx poller/index.ts",
+    "poll:loop": "bash scripts/poll-loop.sh 30",
+    "web": "tsx web/server.ts",
+    "migrate": "tsx scripts/migrate.ts",
+    "build": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@google/genai": "^1.0.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "gtfs-realtime-bindings": "^1.1.1",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.5",
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

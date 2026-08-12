@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+*.log
+.DS_Store
+data/stop_times.txt
+data/google_transit.zip
+data/*.zip
+data/schedule-index.json
