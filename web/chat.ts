@@ -6,6 +6,8 @@ import {
 import type pg from "pg";
 import {
   getGhostBuses,
+  getHeadwayGaps,
+  getReliabilitySummary24h,
   getRouteReliability,
   getWorstRoutesToday,
 } from "./tools.js";
@@ -51,6 +53,21 @@ const toolDeclarations: FunctionDeclaration[] = [
       properties: {},
     },
   },
+  {
+    name: "getHeadwayGaps",
+    description:
+      "Find service gaps on a MARTA route: gaps over 15 minutes between consecutive vehicle sightings in the last 2 hours.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        route_id: {
+          type: Type.STRING,
+          description: "MARTA route_id (e.g. '1', '110', '20').",
+        },
+      },
+      required: ["route_id"],
+    },
+  },
 ];
 
 async function runTool(
@@ -69,6 +86,11 @@ async function runTool(
       return getGhostBuses(pool);
     case "getWorstRoutesToday":
       return getWorstRoutesToday(pool);
+    case "getHeadwayGaps":
+      return getHeadwayGaps(
+        pool,
+        String(args.route_id ?? args.route ?? "")
+      );
     default:
       return { error: `Unknown tool: ${name}` };
   }
@@ -150,4 +172,62 @@ export async function askMartaChat(
     config: { systemInstruction },
   });
   return (final.text ?? "").trim() || "No answer generated.";
+}
+
+/** Plain-English reliability report card from last-24h aggregates + ghosts. */
+export async function generateReportCard(pool: pg.Pool): Promise<{
+  report: string;
+  generated_at: string;
+}> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is required");
+  }
+
+  const [summary, ghosts, worst] = await Promise.all([
+    getReliabilitySummary24h(pool),
+    getGhostBuses(pool),
+    getWorstRoutesToday(pool),
+  ]);
+
+  const best = [...summary].sort(
+    (a, b) => Number(b.on_time_pct) - Number(a.on_time_pct)
+  )[0];
+  const worstRoute = summary[0];
+  let headwayNote: unknown = null;
+  if (worstRoute?.route_id) {
+    headwayNote = await getHeadwayGaps(pool, String(worstRoute.route_id));
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
+  const prompt = [
+    "Write a short plain-English MARTA Reliability Report Card in 3-5 sentences.",
+    "Name the best and worst routes by on-time %, comment on overall system health,",
+    "and mention any notable ghost buses or service gaps if present.",
+    "Do not use markdown headings or bullet lists — just short paragraphs.",
+    "",
+    "DATA:",
+    JSON.stringify({
+      routes_24h: summary.slice(0, 25),
+      best_route: best ?? null,
+      worst_route: worstRoute ?? null,
+      worst_today: worst,
+      ghost_buses: { count: ghosts.count, sample: ghosts.buses.slice(0, 8) },
+      headway_gaps_worst_route: headwayNote,
+    }),
+  ].join("\n");
+
+  const response = await ai.models.generateContent({
+    model: MODEL,
+    contents: prompt,
+  });
+
+  const report =
+    (response.text ?? "").trim() ||
+    "Not enough reliability data yet to write a report card.";
+
+  return {
+    report,
+    generated_at: new Date().toISOString(),
+  };
 }

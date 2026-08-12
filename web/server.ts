@@ -2,7 +2,7 @@ import "dotenv/config";
 import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { askMartaChat } from "./chat.js";
+import { askMartaChat, generateReportCard } from "./chat.js";
 import { createPool } from "./db.js";
 import { getReliabilityChart } from "./tools.js";
 
@@ -40,6 +40,18 @@ app.post("/api/chat", async (req, res) => {
     console.error("/api/chat", err);
     res.status(500).json({
       error: err instanceof Error ? err.message : "chat failed",
+    });
+  }
+});
+
+app.get("/api/report", async (_req, res) => {
+  try {
+    const result = await generateReportCard(pool);
+    res.json(result);
+  } catch (err) {
+    console.error("/api/report", err);
+    res.status(500).json({
+      error: err instanceof Error ? err.message : "report failed",
     });
   }
 });
