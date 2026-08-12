@@ -3,11 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MARTA Receipts</title>
+    <title>Transit Ledger ATL</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Outfit:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
@@ -25,34 +25,56 @@
     ></script>
     <style>
       :root {
-        --bg: #0c1014;
-        --bg-elev: #121820;
-        --panel: #161d26;
-        --ink: #eef3f8;
-        --muted: #8b9aab;
-        --accent: #f5a623;
-        --accent-2: #ff7a3d;
-        --line: #273140;
-        --good: #3dd68c;
-        --bad: #ff6b6b;
-        --chat-w: min(420px, 38vw);
-        --top: 56px;
+        --bg: #000000;
+        --bg-soft: #070707;
+        --glass: rgba(255, 255, 255, 0.035);
+        --glass-strong: rgba(255, 255, 255, 0.06);
+        --ink: #f7f4ef;
+        --muted: #9a958c;
+        --accent: #d4af37;
+        --accent-hi: #f0d78c;
+        --line: rgba(255, 255, 255, 0.1);
+        --line-strong: rgba(212, 175, 55, 0.35);
+        --good: #5ee4a8;
+        --bad: #ff7a7a;
+        --warn: #e8c25a;
+        --chat-w: min(400px, 36vw);
+        --top: 64px;
+        --space: 1rem;
+        --radius: 18px;
+        --shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+        --specular: inset 0 1px 0 rgba(255, 255, 255, 0.12);
       }
       * { box-sizing: border-box; }
       html, body { height: 100%; }
       body {
         margin: 0;
         color: var(--ink);
-        font-family: "DM Sans", system-ui, sans-serif;
+        font-family: "Outfit", system-ui, sans-serif;
         background:
-          radial-gradient(900px 500px at 12% -8%, rgba(245, 166, 35, 0.14), transparent 55%),
-          radial-gradient(800px 480px at 88% 0%, rgba(61, 214, 140, 0.08), transparent 50%),
-          linear-gradient(180deg, #10161d 0%, var(--bg) 40%);
+          radial-gradient(1000px 520px at 15% -10%, rgba(212, 175, 55, 0.16), transparent 55%),
+          radial-gradient(900px 480px at 90% 0%, rgba(255, 255, 255, 0.05), transparent 45%),
+          radial-gradient(700px 500px at 50% 100%, rgba(212, 175, 55, 0.06), transparent 50%),
+          #000;
         overflow: hidden;
       }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+        background-size: 72px 72px;
+        mask-image: radial-gradient(ellipse at center, black 20%, transparent 75%);
+        opacity: 0.45;
+        z-index: 0;
+      }
 
-      /* —— shell —— */
       .app {
+        position: relative;
+        z-index: 1;
         display: grid;
         grid-template-columns: 1fr var(--chat-w);
         grid-template-rows: var(--top) 1fr;
@@ -65,121 +87,279 @@
         align-items: center;
         justify-content: space-between;
         gap: 1rem;
-        padding: 0 1.1rem;
+        padding: 0 1.35rem;
         border-bottom: 1px solid var(--line);
-        background: color-mix(in srgb, var(--bg-elev) 88%, transparent);
-        backdrop-filter: blur(12px);
+        background: linear-gradient(180deg, rgba(20,20,20,0.85), rgba(0,0,0,0.55));
+        backdrop-filter: blur(18px) saturate(1.2);
+        box-shadow: 0 1px 0 rgba(255,255,255,0.04);
         z-index: 5;
       }
       .brand {
         display: flex;
         align-items: baseline;
-        gap: 0.55rem;
-        font-family: "Bricolage Grotesque", sans-serif;
-        font-weight: 800;
-        font-size: 1.25rem;
-        letter-spacing: -0.03em;
+        gap: 0.65rem;
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-weight: 600;
+        font-size: 1.55rem;
+        letter-spacing: 0.01em;
       }
       .brand em {
-        font-style: normal;
-        color: var(--accent);
+        font-style: italic;
+        color: var(--accent-hi);
+        font-weight: 600;
       }
       .brand-sub {
         color: var(--muted);
-        font-size: 0.78rem;
+        font-family: "Outfit", sans-serif;
+        font-size: 0.68rem;
         font-weight: 500;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.16em;
         text-transform: uppercase;
       }
       .live-pill {
         display: inline-flex;
         align-items: center;
-        gap: 0.4rem;
-        font-size: 0.75rem;
+        gap: 0.45rem;
+        font-size: 0.72rem;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
         color: var(--good);
-        border: 1px solid color-mix(in srgb, var(--good) 35%, var(--line));
-        background: color-mix(in srgb, var(--good) 10%, transparent);
-        padding: 0.28rem 0.55rem;
+        border: 1px solid rgba(94, 228, 168, 0.28);
+        background: rgba(94, 228, 168, 0.08);
+        padding: 0.35rem 0.7rem;
         border-radius: 999px;
+        box-shadow: var(--specular);
       }
       .live-pill i {
         width: 7px;
         height: 7px;
         border-radius: 50%;
         background: var(--good);
-        box-shadow: 0 0 0 0 rgba(61, 214, 140, 0.7);
         animation: pulse 1.8s infinite;
       }
       @keyframes pulse {
-        0% { box-shadow: 0 0 0 0 rgba(61, 214, 140, 0.55); }
-        70% { box-shadow: 0 0 0 8px rgba(61, 214, 140, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(61, 214, 140, 0); }
+        0% { box-shadow: 0 0 0 0 rgba(94, 228, 168, 0.45); }
+        70% { box-shadow: 0 0 0 9px rgba(94, 228, 168, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(94, 228, 168, 0); }
       }
 
-      /* —— main canvas —— */
       .canvas {
         overflow: auto;
-        padding: 1rem 1.15rem 2rem;
+        padding: 1.15rem 1.35rem 2.4rem;
         scroll-behavior: smooth;
       }
       .canvas-inner {
-        max-width: 1080px;
+        max-width: 1120px;
         margin: 0 auto;
         display: grid;
-        gap: 1rem;
-        animation: rise 0.55s ease both;
+        gap: var(--space);
+        animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
       }
       @keyframes rise {
-        from { opacity: 0; transform: translateY(10px); }
+        from { opacity: 0; transform: translateY(14px); }
         to { opacity: 1; transform: translateY(0); }
+      }
+
+      .problem-banner {
+        margin: 0;
+        padding: 1rem 1.15rem;
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius);
+        background:
+          linear-gradient(135deg, rgba(212,175,55,0.14), transparent 45%),
+          linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+        box-shadow: var(--shadow), var(--specular);
+        color: #ebe6dc;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        font-weight: 400;
+      }
+      .problem-banner strong {
+        color: var(--accent-hi);
+        font-weight: 600;
+      }
+
+      .commute {
+        display: grid;
+        grid-template-columns: minmax(240px, 0.9fr) 1.4fr;
+        gap: 1rem;
+        align-items: stretch;
+        padding: 1.1rem 1.15rem;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background:
+          linear-gradient(160deg, rgba(212,175,55,0.1), transparent 40%),
+          var(--glass);
+        backdrop-filter: blur(16px);
+        box-shadow: var(--shadow), var(--specular);
+      }
+      .commute h2 { margin: 0 0 0.2rem; }
+      .commute-form {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 0.5rem;
+        margin-top: 0.85rem;
+        align-items: end;
+      }
+      .commute-form label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        color: var(--muted);
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 600;
+      }
+      .commute-form input {
+        background: rgba(0,0,0,0.45);
+        border: 1px solid var(--line);
+        color: var(--ink);
+        border-radius: 12px;
+        padding: 0.6rem 0.7rem;
+        font: inherit;
+        font-size: 0.95rem;
+        width: 100%;
+        box-shadow: var(--specular);
+      }
+      .commute-form input:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(212,175,55,0.15);
+      }
+      .verdict-box {
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        padding: 1rem 1.1rem;
+        background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.35));
+        min-height: 148px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        box-shadow: var(--specular);
+      }
+      .verdict-box .kicker {
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+        font-weight: 600;
+        margin-bottom: 0.3rem;
+      }
+      .verdict-box .headline {
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-weight: 600;
+        font-size: 1.85rem;
+        letter-spacing: -0.01em;
+        line-height: 1.1;
+        margin: 0;
+      }
+      .verdict-box .reason {
+        margin: 0.5rem 0 0;
+        color: #d8d2c8;
+        font-size: 0.9rem;
+        line-height: 1.45;
+      }
+      .verdict-box.take_bus { border-color: rgba(94,228,168,0.35); }
+      .verdict-box.take_bus .headline { color: var(--good); }
+      .verdict-box.take_uber { border-color: rgba(255,122,122,0.4); }
+      .verdict-box.take_uber .headline { color: var(--bad); }
+      .verdict-box.toss_up { border-color: rgba(212,175,55,0.4); }
+      .verdict-box.toss_up .headline { color: var(--accent-hi); }
+      .verdict-box.no_service { border-color: var(--line); }
+      .verdict-box.no_service .headline { color: #a8a29a; }
+      .commute-metrics {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.5rem;
+        margin-top: 0.85rem;
+      }
+      .commute-metrics div {
+        background: rgba(0,0,0,0.4);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 0.5rem 0.6rem;
+        box-shadow: var(--specular);
+      }
+      .commute-metrics .mlabel {
+        color: var(--muted);
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .commute-metrics .mval {
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-weight: 600;
+        font-size: 1.2rem;
+        margin-top: 0.15rem;
+      }
+      @media (max-width: 960px) {
+        .commute, .commute-form, .commute-metrics { grid-template-columns: 1fr 1fr; }
+        .commute { grid-template-columns: 1fr; }
       }
 
       .kpis {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 0.75rem;
+        gap: var(--space);
       }
       .kpi {
-        background: color-mix(in srgb, var(--panel) 92%, black);
+        background:
+          linear-gradient(165deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02) 40%, rgba(0,0,0,0.2)),
+          var(--glass);
         border: 1px solid var(--line);
-        border-radius: 14px;
-        padding: 0.85rem 0.95rem;
+        border-radius: var(--radius);
+        padding: 1rem 1.05rem;
         position: relative;
         overflow: hidden;
+        min-height: 104px;
+        backdrop-filter: blur(14px);
+        box-shadow: var(--shadow), var(--specular);
+        transition: transform 0.25s ease, border-color 0.25s ease;
+      }
+      .kpi:hover {
+        transform: translateY(-2px);
+        border-color: rgba(212,175,55,0.28);
       }
       .kpi::after {
         content: "";
         position: absolute;
-        inset: auto -20% -40% auto;
-        width: 90px;
-        height: 90px;
-        background: radial-gradient(circle, rgba(245,166,35,0.18), transparent 70%);
+        inset: auto -15% -45% auto;
+        width: 110px;
+        height: 110px;
+        background: radial-gradient(circle, rgba(212,175,55,0.22), transparent 70%);
         pointer-events: none;
       }
       .kpi .label {
         color: var(--muted);
-        font-size: 0.72rem;
+        font-size: 0.68rem;
         text-transform: uppercase;
-        letter-spacing: 0.06em;
-        margin-bottom: 0.35rem;
+        letter-spacing: 0.1em;
+        margin-bottom: 0.4rem;
+        font-weight: 500;
       }
       .kpi .value {
-        font-family: "Bricolage Grotesque", sans-serif;
-        font-weight: 700;
-        font-size: 1.55rem;
-        letter-spacing: -0.03em;
-        line-height: 1.1;
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-weight: 600;
+        font-size: 2rem;
+        letter-spacing: -0.02em;
+        line-height: 1;
       }
-      .kpi .hint { color: var(--muted); font-size: 0.78rem; margin-top: 0.25rem; }
+      .kpi .hint { color: var(--muted); font-size: 0.76rem; margin-top: 0.35rem; font-weight: 400; }
       .kpi.bad .value { color: var(--bad); }
       .kpi.good .value { color: var(--good); }
-      .kpi.warn .value { color: var(--accent); }
+      .kpi.warn .value { color: var(--accent-hi); }
 
       .panel {
-        background: color-mix(in srgb, var(--panel) 94%, black);
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.02)),
+          rgba(8, 8, 8, 0.72);
         border: 1px solid var(--line);
-        border-radius: 16px;
-        padding: 1rem 1.05rem 1.1rem;
+        border-radius: var(--radius);
+        padding: 1.05rem 1.1rem 1.15rem;
+        backdrop-filter: blur(18px) saturate(1.15);
+        box-shadow: var(--shadow), var(--specular);
       }
       .panel-head {
         display: flex;
@@ -190,50 +370,61 @@
       }
       .panel h2 {
         margin: 0;
-        font-family: "Bricolage Grotesque", sans-serif;
-        font-size: 1.05rem;
-        font-weight: 700;
-        letter-spacing: -0.02em;
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-size: 1.35rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
       }
-      .panel .meta { color: var(--muted); font-size: 0.8rem; }
+      .panel .meta {
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 400;
+        margin-top: 0.2rem;
+        letter-spacing: 0.02em;
+      }
 
       .split {
         display: grid;
         grid-template-columns: 1.4fr 0.9fr;
-        gap: 0.85rem;
+        gap: var(--space);
       }
       .chart-wrap { position: relative; height: 320px; }
 
-      .board { display: flex; flex-direction: column; gap: 0.45rem; max-height: 320px; overflow: auto; }
+      .board { display: flex; flex-direction: column; gap: 0.4rem; max-height: 320px; overflow: auto; }
       .board-row {
         display: grid;
         grid-template-columns: 28px 1fr auto;
         gap: 0.55rem;
         align-items: center;
-        padding: 0.45rem 0.5rem;
-        border-radius: 10px;
+        padding: 0.5rem 0.55rem;
+        border-radius: 12px;
         border: 1px solid transparent;
         cursor: pointer;
-        transition: background 0.15s, border-color 0.15s, transform 0.15s;
+        background: transparent;
+        color: inherit;
+        width: 100%;
+        text-align: left;
+        transition: background 0.2s, border-color 0.2s, transform 0.2s;
       }
       .board-row:hover {
-        background: #1c2530;
+        background: rgba(255,255,255,0.04);
         border-color: var(--line);
-        transform: translateX(2px);
+        transform: translateX(3px);
       }
       .board-row .rank {
         font-variant-numeric: tabular-nums;
         color: var(--muted);
-        font-size: 0.8rem;
+        font-size: 0.78rem;
       }
       .board-row .route {
-        font-weight: 650;
-        font-family: "Bricolage Grotesque", sans-serif;
+        font-weight: 600;
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-size: 1.05rem;
       }
       .board-row .bar {
-        height: 6px;
+        height: 5px;
         border-radius: 99px;
-        background: #243041;
+        background: rgba(255,255,255,0.08);
         margin-top: 0.3rem;
         overflow: hidden;
       }
@@ -245,146 +436,177 @@
       }
       .board-row .pct {
         font-variant-numeric: tabular-nums;
-        font-weight: 650;
+        font-weight: 600;
         font-size: 0.9rem;
+        color: var(--accent-hi);
       }
 
-      .report-actions { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+      .report-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
       button, .btn {
         font-family: inherit;
-        background: var(--accent);
-        color: #1a1205;
+        background: linear-gradient(180deg, #f0d78c, #d4af37);
+        color: #120e05;
         border: none;
-        border-radius: 10px;
-        padding: 0.55rem 0.85rem;
-        font-weight: 700;
+        border-radius: 12px;
+        padding: 0.58rem 0.95rem;
+        font-weight: 650;
         cursor: pointer;
-        font-size: 0.88rem;
+        font-size: 0.86rem;
+        box-shadow: 0 8px 24px rgba(212,175,55,0.22), var(--specular);
+        transition: transform 0.15s ease, filter 0.15s ease;
       }
-      button:disabled { opacity: 0.55; cursor: wait; }
+      button:hover { filter: brightness(1.05); transform: translateY(-1px); }
+      button:disabled { opacity: 0.5; cursor: wait; transform: none; }
       button.secondary, .btn.secondary {
-        background: transparent;
+        background: rgba(255,255,255,0.03);
         color: var(--ink);
         border: 1px solid var(--line);
+        box-shadow: var(--specular);
       }
-      button.secondary:hover { border-color: var(--accent); color: var(--accent); }
+      button.secondary:hover {
+        border-color: var(--accent);
+        color: var(--accent-hi);
+        filter: none;
+      }
 
       .report-text {
-        margin-top: 0.85rem;
+        margin-top: 0.8rem;
         line-height: 1.55;
-        color: #d7e0ea;
-        font-size: 0.95rem;
+        color: #e5dfd4;
+        font-size: 0.94rem;
         white-space: pre-wrap;
       }
-      .status { color: var(--muted); font-size: 0.82rem; margin-top: 0.5rem; min-height: 1.1em; }
+      .status {
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 400;
+        margin-top: 0.45rem;
+        min-height: 1.1em;
+      }
 
       .pdf-shell {
-        margin-top: 0.9rem;
+        margin-top: 0.85rem;
         border: 1px solid var(--line);
-        border-radius: 12px;
+        border-radius: 14px;
         overflow: hidden;
-        background: #0a0d11;
+        background: #050505;
         min-height: 420px;
         display: none;
         animation: rise 0.4s ease both;
+        box-shadow: var(--shadow);
       }
       .pdf-shell.show { display: block; }
       .pdf-toolbar {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0.45rem 0.65rem;
+        padding: 0.5rem 0.75rem;
         border-bottom: 1px solid var(--line);
-        background: #121820;
-        font-size: 0.8rem;
+        background: rgba(255,255,255,0.03);
+        font-size: 0.78rem;
         color: var(--muted);
       }
       .pdf-frame {
         width: 100%;
         height: min(62vh, 640px);
         border: 0;
-        background: #111;
+        background: #0a0a0a;
       }
-      .pdf-empty {
-        display: grid;
-        place-items: center;
-        height: 220px;
+      .pdf-placeholder {
+        margin-top: 0.85rem;
+        border: 1px dashed rgba(212,175,55,0.28);
+        border-radius: 14px;
+        padding: 1.2rem 1.1rem;
         color: var(--muted);
-        font-size: 0.9rem;
-        text-align: center;
-        padding: 1rem;
+        font-size: 0.8rem;
+        font-weight: 400;
+        line-height: 1.45;
+        background: rgba(255,255,255,0.02);
       }
+      .pdf-placeholder[hidden] { display: none !important; }
 
-      /* —— live map (isolated) —— */
+      .map-meaning {
+        margin: 0 0 0.8rem;
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-weight: 400;
+        line-height: 1.5;
+        max-width: 70ch;
+      }
       .map-panel #busMap {
-        height: 380px;
-        border-radius: 12px;
+        height: 400px;
+        border-radius: 14px;
         border: 1px solid var(--line);
-        background: #0a0d11;
+        background: #050505;
         z-index: 1;
+        box-shadow: inset 0 0 40px rgba(0,0,0,0.5);
       }
       .map-legend {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.75rem;
-        margin-top: 0.65rem;
+        gap: 0.95rem;
+        margin-top: 0.85rem;
         color: var(--muted);
         font-size: 0.78rem;
+        font-weight: 400;
       }
       .map-legend span {
         display: inline-flex;
         align-items: center;
-        gap: 0.35rem;
+        gap: 0.4rem;
       }
       .map-dot {
-        width: 10px;
-        height: 10px;
+        width: 9px;
+        height: 9px;
         border-radius: 50%;
         display: inline-block;
-        border: 1px solid rgba(255,255,255,0.35);
+        border: 1px solid rgba(255,255,255,0.4);
+        box-shadow: 0 0 8px currentColor;
       }
-      .map-dot.green { background: #3dd68c; }
-      .map-dot.yellow { background: #f5a623; }
-      .map-dot.red { background: #ff6b6b; }
-      .map-dot.gray { background: #94a3b8; }
+      .map-dot.green { background: #5ee4a8; color: #5ee4a8; }
+      .map-dot.yellow { background: #d4af37; color: #d4af37; }
+      .map-dot.red { background: #ff7a7a; color: #ff7a7a; }
+      .map-dot.gray { background: #9a958c; color: #9a958c; }
       .bus-marker {
         width: 12px;
         height: 12px;
         border-radius: 50%;
         border: 2px solid #fff;
-        box-shadow: 0 0 0 1px rgba(0,0,0,0.35);
+        box-shadow: 0 0 10px rgba(255,255,255,0.25);
       }
 
-      /* —— Cursor-like chat rail —— */
       .chat-rail {
         display: flex;
         flex-direction: column;
         border-left: 1px solid var(--line);
-        background: color-mix(in srgb, #0e1319 92%, #1a222c);
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.03), transparent 30%),
+          rgba(0, 0, 0, 0.72);
+        backdrop-filter: blur(22px);
         min-height: 0;
       }
       .chat-rail-head {
-        padding: 0.85rem 0.95rem 0.65rem;
+        padding: 1rem 1.05rem 0.75rem;
         border-bottom: 1px solid var(--line);
       }
       .chat-rail-head h2 {
         margin: 0;
-        font-family: "Bricolage Grotesque", sans-serif;
-        font-size: 0.98rem;
-        font-weight: 700;
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-size: 1.25rem;
+        font-weight: 600;
       }
       .chat-rail-head p {
-        margin: 0.25rem 0 0;
+        margin: 0.3rem 0 0;
         color: var(--muted);
-        font-size: 0.78rem;
+        font-size: 0.76rem;
       }
       .chat-log {
         flex: 1;
         overflow-y: auto;
-        padding: 0.85rem 0.85rem 0.5rem;
+        padding: 0.95rem 0.9rem 0.55rem;
         display: flex;
         flex-direction: column;
-        gap: 0.7rem;
+        gap: 0.75rem;
         min-height: 0;
       }
       .chat-empty {
@@ -394,33 +616,35 @@
         font-size: 0.88rem;
         padding: 1.5rem 1rem;
         max-width: 260px;
-        line-height: 1.45;
+        line-height: 1.5;
       }
       .bubble {
-        padding: 0.7rem 0.8rem;
-        border-radius: 12px;
+        padding: 0.75rem 0.85rem;
+        border-radius: 14px;
         line-height: 1.45;
         font-size: 0.9rem;
         max-width: 95%;
-        animation: rise 0.25s ease both;
+        animation: rise 0.28s ease both;
+        box-shadow: var(--specular);
       }
       .bubble.user {
         align-self: flex-end;
-        background: #243041;
+        background: linear-gradient(180deg, rgba(212,175,55,0.18), rgba(212,175,55,0.08));
+        border: 1px solid rgba(212,175,55,0.25);
         white-space: pre-wrap;
       }
       .bubble.bot {
         align-self: flex-start;
-        background: #182029;
+        background: rgba(255,255,255,0.04);
         border: 1px solid var(--line);
         border-left: 3px solid var(--good);
       }
       .bubble.bot.tone-worst { border-left-color: var(--bad); }
-      .bubble.bot.tone-ghost { border-left-color: #94a3b8; }
+      .bubble.bot.tone-ghost { border-left-color: #9a958c; }
       .bubble.bot.tone-gap { border-left-color: var(--accent); }
       .bubble.error {
-        background: #2a1a1a;
-        border: 1px solid #5c2b2b;
+        background: rgba(255,122,122,0.08);
+        border: 1px solid rgba(255,122,122,0.35);
         white-space: pre-wrap;
       }
       .bubble.bot .md p { margin: 0 0 0.45rem; }
@@ -432,62 +656,71 @@
       .bubble.bot .md strong { color: #fff; }
       .bubble.bot .md h1, .bubble.bot .md h2, .bubble.bot .md h3 {
         margin: 0.35rem 0;
-        font-size: 0.95rem;
-        color: var(--accent);
-        font-family: "Bricolage Grotesque", sans-serif;
+        font-size: 1.05rem;
+        color: var(--accent-hi);
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-weight: 600;
       }
       .stat-chip {
         display: inline-block;
-        padding: 0.05rem 0.35rem;
-        border-radius: 4px;
-        background: color-mix(in srgb, var(--accent) 22%, transparent);
-        color: #ffd891;
-        font-weight: 700;
+        padding: 0.05rem 0.4rem;
+        border-radius: 6px;
+        background: rgba(212,175,55,0.18);
+        color: var(--accent-hi);
+        font-weight: 650;
         font-variant-numeric: tabular-nums;
       }
       .chat-composer {
         border-top: 1px solid var(--line);
-        padding: 0.7rem 0.75rem 0.85rem;
-        background: #0c1117;
+        padding: 0.8rem 0.85rem 0.95rem;
+        background: rgba(0,0,0,0.55);
       }
       .hints {
         display: flex;
         flex-wrap: wrap;
         gap: 0.35rem;
-        margin-bottom: 0.55rem;
+        margin-bottom: 0.6rem;
       }
       .hints button {
-        background: transparent;
+        background: rgba(255,255,255,0.03);
         color: var(--muted);
         border: 1px solid var(--line);
         font-weight: 500;
-        font-size: 0.72rem;
-        padding: 0.28rem 0.45rem;
+        font-size: 0.7rem;
+        padding: 0.3rem 0.55rem;
         border-radius: 999px;
+        box-shadow: none;
       }
-      .hints button:hover { color: var(--ink); border-color: #3a4656; }
+      .hints button:hover {
+        color: var(--accent-hi);
+        border-color: rgba(212,175,55,0.4);
+        transform: none;
+        filter: none;
+      }
       #chatForm {
         display: grid;
         grid-template-columns: 1fr auto;
-        gap: 0.4rem;
+        gap: 0.45rem;
         align-items: end;
       }
       #question {
         width: 100%;
         resize: none;
-        min-height: 44px;
+        min-height: 48px;
         max-height: 120px;
-        background: #121820;
+        background: rgba(0,0,0,0.5);
         border: 1px solid var(--line);
         color: var(--ink);
-        border-radius: 12px;
-        padding: 0.65rem 0.75rem;
+        border-radius: 14px;
+        padding: 0.7rem 0.8rem;
         font: inherit;
         font-size: 0.9rem;
+        box-shadow: var(--specular);
       }
       #question:focus {
-        outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+        outline: none;
         border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(212,175,55,0.14);
       }
 
       @media (max-width: 960px) {
@@ -507,20 +740,67 @@
         .split { grid-template-columns: 1fr; }
         :root { --chat-w: 100%; }
       }
+
+      /* Leaflet dark chrome */
+      .leaflet-container { background: #050505; font: inherit; }
+      .leaflet-popup-content-wrapper {
+        background: #111;
+        color: #f7f4ef;
+        border-radius: 12px;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+      }
+      .leaflet-popup-tip { background: #111; }
+      .leaflet-control-zoom a {
+        background: #111 !important;
+        color: #f7f4ef !important;
+        border-color: rgba(255,255,255,0.12) !important;
+      }
     </style>
   </head>
   <body>
     <div class="app">
       <header class="topbar">
         <div class="brand">
-          MARTA <em>Receipts</em>
-          <span class="brand-sub">live reliability</span>
+          Transit <em>Ledger</em> ATL
+          <span class="brand-sub">MARTA GTFS-RT</span>
         </div>
         <div class="live-pill"><i></i> Polling live</div>
       </header>
 
       <main class="canvas">
         <div class="canvas-inner">
+          <p class="problem-banner">
+            MARTA's app says when a bus is <em>supposed</em> to show up.
+            It won't tell you whether that route has actually been showing up.
+            <strong>Should you trust Route 46 — or eat the Uber?</strong>
+          </p>
+
+          <section class="panel commute" id="commuteCard">
+            <div>
+              <h2>Do I take this bus?</h2>
+              <div class="meta">Live on-time % · ghost no-shows · last GPS</div>
+              <form class="commute-form" id="commuteForm">
+                <label>
+                  Route
+                  <input id="commuteRoute" name="route" value="46" list="routeHints" required />
+                </label>
+                <label>
+                  Arrive by
+                  <input id="commuteArrive" name="arrive_by" value="09:30" placeholder="09:30" />
+                </label>
+                <button type="submit" id="commuteBtn">Check</button>
+              </form>
+              <datalist id="routeHints"></datalist>
+            </div>
+            <div>
+              <div class="verdict-box" id="verdictBox">
+                <div class="kicker">Verdict</div>
+                <p class="headline" id="verdictHeadline">Checking Route 46…</p>
+                <p class="reason" id="verdictReason">Pulling on-time %, scheduled no-shows, and last GPS.</p>
+              </div>
+              <div class="commute-metrics" id="commuteMetrics"></div>
+            </div>
+          </section>
           <div class="kpis">
             <div class="kpi" id="kpiRoutes">
               <div class="label">Routes tracked</div>
@@ -561,7 +841,7 @@
               <div class="panel-head">
                 <div>
                   <h2>Pressure board</h2>
-                  <div class="meta">Worst routes · click to ask chat</div>
+                  <div class="meta">Worst routes · click to check commute</div>
                 </div>
               </div>
               <div class="board" id="pressureBoard"></div>
@@ -571,16 +851,21 @@
           <section class="panel map-panel" id="liveMapSection">
             <div class="panel-head">
               <div>
-                <h2>Live fleet map</h2>
+                <h2>Where’s service hurting right now?</h2>
                 <div class="meta" id="mapStatus">Loading vehicles…</div>
               </div>
             </div>
+            <p class="map-meaning" id="mapMeaning">
+              Each dot is a bus seen in the last 5 minutes. Color is that route’s latest on-time % —
+              so red clusters show neighborhoods where riders are most likely waiting on late buses,
+              not just a raw GPS dump.
+            </p>
             <div id="busMap"></div>
             <div class="map-legend">
-              <span><i class="map-dot green"></i> On-time &gt; 80%</span>
+              <span><i class="map-dot green"></i> Route on-time &gt; 80%</span>
               <span><i class="map-dot yellow"></i> 50–80%</span>
-              <span><i class="map-dot red"></i> &lt; 50%</span>
-              <span><i class="map-dot gray"></i> No reliability yet</span>
+              <span><i class="map-dot red"></i> &lt; 50% — pressure zone</span>
+              <span><i class="map-dot gray"></i> No reliability score yet</span>
             </div>
           </section>
 
@@ -592,7 +877,7 @@
               </div>
               <div class="report-actions">
                 <button type="button" id="reportBtn">Generate card</button>
-                <button type="button" class="secondary" id="pdfBtn">Render PDF</button>
+                <button type="button" class="secondary" id="pdfBtn">Preview PDF</button>
                 <button type="button" class="secondary" id="pdfDownloadBtn" hidden>Download</button>
               </div>
             </div>
@@ -603,10 +888,10 @@
                 <span id="pdfLabel">PDF preview</span>
                 <button type="button" class="secondary" id="pdfCloseBtn" style="padding:0.3rem 0.55rem;font-size:0.75rem">Hide</button>
               </div>
-              <iframe class="pdf-frame" id="pdfFrame" title="MARTA report PDF"></iframe>
+              <iframe class="pdf-frame" id="pdfFrame" title="Transit Ledger ATL report PDF"></iframe>
             </div>
-            <div class="pdf-empty" id="pdfEmpty">
-              Hit <strong>Render PDF</strong> to generate and preview the report card in-page.
+            <div class="pdf-placeholder" id="pdfEmpty">
+              No PDF loaded yet. Use Preview PDF to generate a report card and view it here.
             </div>
           </section>
         </div>
@@ -619,15 +904,15 @@
         </div>
         <div class="chat-log" id="chatLog">
           <div class="chat-empty" id="chatEmpty">
-            Ask about worst routes, ghost buses, or headway gaps. Answers land here like a Cursor side chat.
+            Ask “is Route 46 trustworthy right now?” or about ghosts and gaps.
           </div>
         </div>
         <div class="chat-composer">
           <div class="hints">
-            <button type="button" data-q="What are the worst routes today?">Worst today</button>
+            <button type="button" data-q="Is Route 46 trustworthy right now? I have a 9:30 class.">46 vs Uber</button>
             <button type="button" data-q="Any ghost buses right now?">Ghost buses</button>
-            <button type="button" data-q="Any service gaps on route 20?">Gaps · 20</button>
-            <button type="button" data-q="How reliable is route 110 over the last 4 hours?">Route 110</button>
+            <button type="button" data-q="What are the worst routes today?">Worst today</button>
+            <button type="button" data-q="How reliable is route 20 over the last 4 hours?">Route 20</button>
           </div>
           <form id="chatForm">
             <textarea
@@ -644,8 +929,8 @@
 
     <script>
       const palette = [
-        "#f5a623", "#3dd68c", "#5b8def", "#e86b6b", "#c084fc",
-        "#22d3ee", "#f472b6", "#a3e635", "#fb923c", "#94a3b8",
+        "#d4af37", "#5ee4a8", "#f0d78c", "#ff7a7a", "#c4b5a0",
+        "#8ecae6", "#e9c46a", "#a8dadc", "#f4a261", "#9a958c",
       ];
       let pdfObjectUrl = null;
       let chartInstance = null;
@@ -655,6 +940,83 @@
         el.querySelector(".value").textContent = value;
         if (hint) el.querySelector(".hint").textContent = hint;
       }
+
+      function metricCell(label, value) {
+        return `<div><div class="mlabel">${label}</div><div class="mval">${value}</div></div>`;
+      }
+
+      function fillRouteHints(routes) {
+        const list = document.getElementById("routeHints");
+        list.innerHTML = "";
+        for (const r of routes) {
+          const opt = document.createElement("option");
+          opt.value = r;
+          list.appendChild(opt);
+        }
+      }
+
+      async function checkCommute() {
+        const route = document.getElementById("commuteRoute").value.trim();
+        const arrive = document.getElementById("commuteArrive").value.trim();
+        const box = document.getElementById("verdictBox");
+        const headline = document.getElementById("verdictHeadline");
+        const reason = document.getElementById("verdictReason");
+        const metrics = document.getElementById("commuteMetrics");
+        const btn = document.getElementById("commuteBtn");
+        if (!route) return;
+        btn.disabled = true;
+        headline.textContent = `Checking Route ${route}…`;
+        reason.textContent = "On-time %, scheduled no-shows, last GPS.";
+        box.className = "verdict-box";
+        try {
+          const qs = new URLSearchParams({ route });
+          if (arrive) qs.set("arrive_by", arrive);
+          const res = await fetch(`/api/commute?${qs}`);
+          const raw = await res.text();
+          let data;
+          try {
+            data = JSON.parse(raw);
+          } catch {
+            throw new Error(
+              res.ok
+                ? "Server returned a non-JSON response. Restart npm run web."
+                : `Commute API ${res.status}. Restart npm run web to pick up /api/commute.`
+            );
+          }
+          if (!res.ok) throw new Error(data.error || "commute failed");
+          const v = data.verdict || "toss_up";
+          box.className = `verdict-box ${v}`;
+          headline.textContent = data.headline || `Route ${route}`;
+          reason.textContent = data.reason || "";
+          const m = data.metrics || {};
+          const ghosts =
+            m.expected_trips > 0
+              ? `${m.ghost_count ?? 0} / ${m.expected_trips}`
+              : String(m.ghost_count ?? 0);
+          metrics.innerHTML =
+            metricCell("On-time", m.on_time_pct == null ? "—" : `${m.on_time_pct}%`) +
+            metricCell("Ghosts", ghosts) +
+            metricCell(
+              "Last GPS",
+              m.last_seen_min_ago == null ? "none" : `${m.last_seen_min_ago} min ago`
+            ) +
+            metricCell(
+              "Avg delay",
+              m.avg_delay_min == null ? "—" : `${m.avg_delay_min} min`
+            );
+        } catch (err) {
+          box.className = "verdict-box toss_up";
+          headline.textContent = "Could not score this route";
+          reason.textContent = err.message;
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      document.getElementById("commuteForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        checkCommute();
+      });
 
       function renderPressureBoard(routeAvgs) {
         const board = document.getElementById("pressureBoard");
@@ -677,7 +1039,12 @@
             <span class="pct">${r.avg.toFixed(1)}%</span>
           `;
           row.addEventListener("click", () => {
-            ask(`How reliable is route ${r.route} over the last 4 hours?`);
+            document.getElementById("commuteRoute").value = r.route;
+            checkCommute();
+            document.getElementById("commuteCard").scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
           });
           board.appendChild(row);
         });
@@ -727,6 +1094,7 @@
           setKpi("kpiWorst", worst ? worst.route : "—", worst ? `${worst.avg.toFixed(1)}% on-time` : "");
           setKpi("kpiBest", best ? best.route : "—", best ? `${best.avg.toFixed(1)}% on-time` : "");
           renderPressureBoard(routeAvgs);
+          fillRouteHints(routes);
 
           status.textContent = `${shown.length} routes plotted · last 4h`;
 
@@ -756,9 +1124,14 @@
               plugins: {
                 legend: {
                   position: "bottom",
-                  labels: { color: "#8b9aab", boxWidth: 10, font: { size: 10 } },
+                  labels: { color: "#9a958c", boxWidth: 10, font: { size: 10 } },
                 },
                 tooltip: {
+                  backgroundColor: "rgba(10,10,10,0.92)",
+                  titleColor: "#f0d78c",
+                  bodyColor: "#f7f4ef",
+                  borderColor: "rgba(212,175,55,0.35)",
+                  borderWidth: 1,
                   callbacks: {
                     label: (c) =>
                       `${c.dataset.label}: ${c.parsed.y?.toFixed?.(1) ?? "—"}%`,
@@ -767,14 +1140,14 @@
               },
               scales: {
                 x: {
-                  ticks: { color: "#8b9aab", maxRotation: 0 },
-                  grid: { color: "rgba(42,53,66,0.55)" },
+                  ticks: { color: "#9a958c", maxRotation: 0 },
+                  grid: { color: "rgba(255,255,255,0.05)" },
                 },
                 y: {
                   min: 0,
                   max: 100,
-                  ticks: { color: "#8b9aab" },
-                  grid: { color: "rgba(42,53,66,0.55)" },
+                  ticks: { color: "#9a958c" },
+                  grid: { color: "rgba(255,255,255,0.05)" },
                 },
               },
             },
@@ -898,7 +1271,7 @@
           pdfObjectUrl = URL.createObjectURL(blob);
           frame.src = pdfObjectUrl;
           shell.classList.add("show");
-          empty.style.display = "none";
+          empty.hidden = true;
           dl.hidden = false;
           document.getElementById("pdfLabel").textContent =
             `Preview · ${new Date().toLocaleTimeString()}`;
@@ -923,10 +1296,11 @@
 
       document.getElementById("pdfCloseBtn").addEventListener("click", () => {
         document.getElementById("pdfShell").classList.remove("show");
-        document.getElementById("pdfEmpty").style.display = "grid";
+        document.getElementById("pdfEmpty").hidden = false;
       });
 
       loadChart();
+      checkCommute();
 
       /* ===== Live map (isolated; safe to delete this block + map section) ===== */
       (function initLiveMap() {
@@ -992,9 +1366,10 @@
             }
 
             if (status) {
-              status.textContent = `${data.count || 0} vehicles · updated ${new Date(
-                data.generated_at || Date.now()
-              ).toLocaleTimeString()}`;
+              const red = (data.vehicles || []).filter((v) => v.color === "red").length;
+              status.textContent =
+                `${data.count || 0} active buses · ${red} on late routes · ` +
+                `updated ${new Date(data.generated_at || Date.now()).toLocaleTimeString()}`;
             }
 
             if (firstFit && pts.length) {

@@ -22,9 +22,13 @@ async function loadWorstRoutesForPdf(pool: pg.Pool): Promise<RouteRow[]> {
 
   const ghostByRoute = new Map<string, number>();
   for (const b of ghosts.buses ?? []) {
-    const id = String(b.route_id ?? "");
-    if (!id) continue;
-    ghostByRoute.set(id, (ghostByRoute.get(id) ?? 0) + 1);
+    for (const id of new Set(
+      [b.route_id, b.route_short_name, b.gtfs_route_id]
+        .map((x) => String(x ?? ""))
+        .filter(Boolean)
+    )) {
+      ghostByRoute.set(id, (ghostByRoute.get(id) ?? 0) + 1);
+    }
   }
 
   return summary.slice(0, 10).map((r) => ({
@@ -154,8 +158,8 @@ export async function streamReportPdf(
     margin: 48,
     size: "LETTER",
     info: {
-      Title: "MARTA Reliability Report Card",
-      Author: "MARTA Receipts",
+      Title: "Transit Ledger ATL — Reliability Report Card",
+      Author: "Transit Ledger ATL",
       CreationDate: new Date(generated_at),
     },
   });
@@ -165,7 +169,7 @@ export async function streamReportPdf(
   doc
     .fontSize(20)
     .fillColor("#1a1205")
-    .text("MARTA Reliability Report Card");
+    .text("Transit Ledger ATL — Reliability Report Card");
   doc
     .fontSize(10)
     .fillColor("#666")
@@ -196,7 +200,7 @@ export async function streamReportPdf(
   doc
     .fontSize(8)
     .fillColor("#999")
-    .text("MARTA Receipts · GTFS-RT → Timescale → Gemini", 48, 740, {
+    .text("Transit Ledger ATL · MARTA GTFS-RT → Timescale → Gemini", 48, 740, {
       align: "left",
     });
 

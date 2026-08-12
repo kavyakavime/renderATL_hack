@@ -1,6 +1,6 @@
-# MARTA Receipts
+# Transit Ledger ATL
 
-Hackathon build: poll MARTA GTFS-RT feeds into TimescaleDB, chart route reliability, and ask Gemini about the data.
+Hackathon build: poll **MARTA GTFS-RT** feeds into TimescaleDB, chart route reliability, and ask Gemini about the data.
 
 ## What you get
 
@@ -8,7 +8,7 @@ Hackathon build: poll MARTA GTFS-RT feeds into TimescaleDB, chart route reliabil
 | --- | --- |
 | `poller/` | HTTPS `.pb` feeds → delay vs static GTFS → `vehicle_positions` / `trip_delays` |
 | `migrations/001_init.sql` | Hypertables, `routes`, continuous aggregate `route_reliability_15m`, compression |
-| `web/` | Express dashboard (Chart.js) + `/api/chat` with Gemini function calling |
+| `web/` | Express dashboard (Chart.js + Leaflet) + `/api/chat` with Gemini function calling |
 
 ## Prerequisites
 
@@ -63,11 +63,12 @@ Steps:
 | --- | --- | --- |
 | `DATABASE_URL` | yes | Timescale/Tiger connection string |
 | `GEMINI_API_KEY` | yes (chat) | Google AI Studio key |
+| `GEMINI_MODEL` | no | Defaults to `gemini-3.1-flash-lite` |
 | `PORT` | no | Default `3000` |
 
 ## Notes
 
-- Chat model: `gemini-3.5-flash` (`gemini-2.5-flash` is blocked for new API keys)
-- On-time = `\|delay_sec\| <= 300`
-- Ghost buses = GPS in last 15m with no matching `trip_delays` for that trip
+- Product name: **Transit Ledger ATL** (data source: MARTA GTFS-RT)
+- On-time = `|delay_sec| <= 300`
+- Ghost buses = scheduled trips that should already be in service but never appeared in GPS
 - Default feeds: `…/vehiclepositions.pb` and `…/tripupdates.pb` (HTTPS; short paths 301 to blocked `:80`)

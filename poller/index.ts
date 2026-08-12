@@ -3,6 +3,7 @@ import GtfsRealtimeBindings from "gtfs-realtime-bindings";
 import { createPool } from "../web/db.js";
 import {
   loadScheduleIndex,
+  loadTripSchedule,
   scheduleKey,
   scheduledUnix,
   type ScheduleIndex,
@@ -247,6 +248,11 @@ async function main() {
   console.log(`[poller] fetching MARTA GTFS-RT @ ${new Date().toISOString()}`);
 
   const schedule = await loadScheduleIndex();
+  try {
+    await loadTripSchedule();
+  } catch (err) {
+    console.warn("[poller] trip windows (ghosts) failed:", err);
+  }
 
   const [vehicleFeed, tripFeed] = await Promise.all([
     fetchFeed(VEHICLE_URL),

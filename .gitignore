@@ -7,3 +7,8 @@ data/stop_times.txt
 data/google_transit.zip
 data/*.zip
 data/schedule-index.json
+data/trip-windows.json
+data/trips.txt
+data/calendar.txt
+data/calendar_dates.txt
+data/routes.txt

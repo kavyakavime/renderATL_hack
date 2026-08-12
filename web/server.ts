@@ -3,10 +3,11 @@ import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { askMartaChat, generateReportCard } from "./chat.js";
+import { getCommuteVerdict } from "./commute.js";
 import { createPool } from "./db.js";
 import { getLatestVehicles } from "./mapVehicles.js";
 import { streamReportPdf } from "./reportPdf.js";
-import { getReliabilityChart } from "./tools.js";
+import { getGhostBuses, getReliabilityChart } from "./tools.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -74,6 +75,37 @@ app.get("/api/report/pdf", async (req, res) => {
   }
 });
 
+app.get("/api/commute", async (req, res) => {
+  try {
+    const route = String(req.query.route ?? "").trim();
+    const arriveBy = String(req.query.arrive_by ?? "").trim() || undefined;
+    if (!route) {
+      res.status(400).json({ error: "route is required" });
+      return;
+    }
+    const result = await getCommuteVerdict(pool, route, arriveBy);
+    res.json(result);
+  } catch (err) {
+    console.error("/api/commute", err);
+    res.status(500).json({
+      error: err instanceof Error ? err.message : "commute query failed",
+    });
+  }
+});
+
+app.get("/api/ghosts", async (req, res) => {
+  try {
+    const route = String(req.query.route ?? "").trim() || undefined;
+    const result = await getGhostBuses(pool, route);
+    res.json(result);
+  } catch (err) {
+    console.error("/api/ghosts", err);
+    res.status(500).json({
+      error: err instanceof Error ? err.message : "ghosts query failed",
+    });
+  }
+});
+
 app.get("/api/vehicles/latest", async (_req, res) => {
   try {
     const result = await getLatestVehicles(pool);
@@ -91,5 +123,5 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`[web] MARTA Receipts listening on http://localhost:${port}`);
+  console.log(`[web] Transit Ledger ATL listening on http://localhost:${port}`);
 });

@@ -1,4 +1,23 @@
 import type pg from "pg";
+import {
+  loadTripSchedule,
+  resolveRoute,
+  tripsExpectedNow,
+} from "../poller/schedule.js";
+
+const GHOST_DEFINITION =
+  "Ghost bus: a trip on today's timetable that should already be in service (started at least 8 minutes ago, not yet finished) but has never appeared in GPS.";
+
+export async function routeDbIds(route: string): Promise<string[]> {
+  const q = String(route || "").trim();
+  if (!q) return [];
+  try {
+    const sched = await loadTripSchedule();
+    return resolveRoute(sched, q).db_ids;
+  } catch {
+    return [q];
+  }
+}
 
 export async function getRouteReliability(
   pool: pg.Pool,
@@ -6,6 +25,10 @@ export async function getRouteReliability(
   hours: number
 ) {
   const h = Math.min(Math.max(Number(hours) || 4, 1), 48);
+  const ids = await routeDbIds(route);
+  if (ids.length === 0) {
+    return { route, hours: h, points: [] };
+  }
   const result = await pool.query(
     `
     SELECT
@@ -15,11 +38,11 @@ export async function getRouteReliability(
       ROUND(on_time_pct::numeric, 1) AS on_time_pct,
       sample_count
     FROM route_reliability_15m
-    WHERE route_id = $1
+    WHERE route_id = ANY($1::text[])
       AND bucket >= NOW() - ($2 || ' hours')::interval
     ORDER BY bucket ASC
     `,
-    [route, String(h)]
+    [ids, String(h)]
   );
   return {
     route,
@@ -28,50 +51,98 @@ export async function getRouteReliability(
   };
 }
 
-/** Ghost buses: recent vehicles whose trip has no stop-delay updates. */
-export async function getGhostBuses(pool: pg.Pool) {
-  const result = await pool.query(
-    `
-    WITH recent_vehicles AS (
-      SELECT DISTINCT ON (vehicle_id)
-        time,
-        vehicle_id,
-        route_id,
-        trip_id,
-        lat,
-        lon,
-        speed
-      FROM vehicle_positions
-      WHERE time >= NOW() - INTERVAL '15 minutes'
-      ORDER BY vehicle_id, time DESC
-    )
-    SELECT
-      rv.vehicle_id,
-      rv.route_id,
-      rv.trip_id,
-      rv.lat,
-      rv.lon,
-      rv.speed,
-      rv.time AS last_seen
-    FROM recent_vehicles rv
-    WHERE rv.trip_id IS NOT NULL
-      AND NOT EXISTS (
-        SELECT 1
-        FROM trip_delays td
-        WHERE td.trip_id = rv.trip_id
-          AND td.time >= NOW() - INTERVAL '15 minutes'
-      )
-    ORDER BY rv.route_id, rv.vehicle_id
-    LIMIT 50
-    `
+/** Ghost buses: scheduled trips that never showed up on GPS. */
+export async function getGhostBuses(pool: pg.Pool, route?: string) {
+  const sched = await loadTripSchedule();
+  const routeQ = String(route || "").trim() || undefined;
+  const expected = tripsExpectedNow(sched, { route: routeQ });
+  const resolved = routeQ ? resolveRoute(sched, routeQ) : null;
+
+  const gps = await pool.query(
+    `SELECT COUNT(*)::int AS n FROM vehicle_positions WHERE time >= NOW() - INTERVAL '15 minutes'`
   );
+  if (Number(gps.rows[0]?.n ?? 0) === 0) {
+    return {
+      definition: GHOST_DEFINITION,
+      count: 0,
+      expected_trips: expected.length,
+      showed_trips: 0,
+      show_rate_pct: null as number | null,
+      buses: [] as GhostBusRow[],
+      interpretation:
+        "No GPS in the last 15 minutes — poller may be down; cannot call no-shows.",
+      route: resolved?.short_name ?? routeQ ?? null,
+    };
+  }
+
+  if (expected.length === 0) {
+    return {
+      definition: GHOST_DEFINITION,
+      count: 0,
+      expected_trips: 0,
+      showed_trips: 0,
+      show_rate_pct: null as number | null,
+      buses: [] as GhostBusRow[],
+      interpretation: routeQ
+        ? `No trips currently scheduled on route ${resolved?.short_name ?? routeQ} (started ≥8 min ago and still in their window).`
+        : "No trips currently in their scheduled service window.",
+      route: resolved?.short_name ?? routeQ ?? null,
+    };
+  }
+
+  const tripIds = expected.map((t) => t.trip_id);
+  const since = new Date(
+    Math.min(...expected.map((t) => t.start_unix * 1000)) - 120_000
+  );
+  const seen = await pool.query(
+    `SELECT DISTINCT trip_id
+     FROM vehicle_positions
+     WHERE time >= $1
+       AND trip_id = ANY($2::text[])`,
+    [since, tripIds]
+  );
+  const seenSet = new Set(seen.rows.map((r) => String(r.trip_id)));
+  const ghosts = expected.filter((t) => !seenSet.has(t.trip_id));
+  const showed = expected.length - ghosts.length;
+  const showRate =
+    expected.length > 0
+      ? Math.round((1000 * showed) / expected.length) / 10
+      : null;
+
   return {
-    definition:
-      "Vehicles reporting a position in the last 15 minutes whose trip has no stop-time delay updates (possible ghost / stuck feed).",
-    count: result.rows.length,
-    buses: result.rows,
+    definition: GHOST_DEFINITION,
+    count: ghosts.length,
+    expected_trips: expected.length,
+    showed_trips: showed,
+    show_rate_pct: showRate,
+    buses: ghosts.slice(0, 50).map(
+      (t): GhostBusRow => ({
+        trip_id: t.trip_id,
+        route_id: t.route_short_name,
+        gtfs_route_id: t.route_id,
+        route_short_name: t.route_short_name,
+        scheduled_start: new Date(t.start_unix * 1000).toISOString(),
+        scheduled_end: new Date(t.end_unix * 1000).toISOString(),
+        minutes_since_start: t.minutes_since_start,
+      })
+    ),
+    interpretation:
+      ghosts.length === 0
+        ? `All ${expected.length} scheduled in-service trips have GPS.`
+        : `${ghosts.length} of ${expected.length} scheduled trips never showed on GPS.`,
+    route: resolved?.short_name ?? routeQ ?? null,
   };
 }
+
+type GhostBusRow = {
+  trip_id: string;
+  route_id: string;
+  gtfs_route_id: string;
+  route_short_name: string;
+  scheduled_start: string;
+  scheduled_end: string;
+  minutes_since_start: number;
+};
 
 export async function getWorstRoutesToday(pool: pg.Pool) {
   const result = await pool.query(
@@ -123,6 +194,7 @@ export async function getHeadwayGaps(pool: pg.Pool, routeId: string) {
     return { route: "", hours: 2, threshold_min: 15, gaps: [], error: "route_id required" };
   }
 
+  const ids = await routeDbIds(route);
   const stats = await pool.query(
     `
     SELECT
@@ -132,10 +204,10 @@ export async function getHeadwayGaps(pool: pg.Pool, routeId: string) {
       min(time) AS first_seen,
       max(time) AS last_seen
     FROM vehicle_positions
-    WHERE route_id = $1
+    WHERE route_id = ANY($1::text[])
       AND time >= NOW() - INTERVAL '2 hours'
     `,
-    [route]
+    [ids]
   );
   const s = stats.rows[0] ?? {};
 
@@ -144,7 +216,7 @@ export async function getHeadwayGaps(pool: pg.Pool, routeId: string) {
     WITH sightings AS (
       SELECT DISTINCT time
       FROM vehicle_positions
-      WHERE route_id = $1
+      WHERE route_id = ANY($1::text[])
         AND time >= NOW() - INTERVAL '2 hours'
     ),
     gaps AS (
@@ -162,7 +234,7 @@ export async function getHeadwayGaps(pool: pg.Pool, routeId: string) {
     WHERE gap_start IS NOT NULL
     ORDER BY duration_min DESC
     `,
-    [route]
+    [ids]
   );
 
   const allGaps = result.rows.map((r) => ({

@@ -1,7 +1,7 @@
 {
   "name": "marta-receipts",
   "version": "1.0.0",
-  "description": "MARTA GTFS-RT reliability dashboard — poller, TimescaleDB, Gemini chat",
+  "description": "Transit Ledger ATL — MARTA GTFS-RT reliability dashboard (poller, TimescaleDB, Gemini)",
   "private": true,
   "type": "module",
   "scripts": {

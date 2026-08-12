@@ -11,6 +11,7 @@ import {
   getRouteReliability,
   getWorstRoutesToday,
 } from "./tools.js";
+import { getCommuteVerdict } from "./commute.js";
 
 // Free-tier RPD on gemini-3.5-flash is only 20. Override with GEMINI_MODEL if needed.
 const MODEL = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
@@ -38,10 +39,15 @@ const toolDeclarations: FunctionDeclaration[] = [
   {
     name: "getGhostBuses",
     description:
-      "List possible ghost buses: vehicles with recent GPS but no matching stop-time delay updates.",
+      "List ghost buses: trips on today's timetable that should already be in service but have never appeared in GPS. Optional route filter (e.g. '46').",
     parameters: {
       type: Type.OBJECT,
-      properties: {},
+      properties: {
+        route: {
+          type: Type.STRING,
+          description: "Optional MARTA route (short name like '46' or 'GOLD').",
+        },
+      },
     },
   },
   {
@@ -62,10 +68,29 @@ const toolDeclarations: FunctionDeclaration[] = [
       properties: {
         route_id: {
           type: Type.STRING,
-          description: "MARTA route_id (e.g. '1', '110', '20').",
+          description: "MARTA route short name (e.g. '46', '20', 'GOLD').",
         },
       },
       required: ["route_id"],
+    },
+  },
+  {
+    name: "getCommuteVerdict",
+    description:
+      "Decide whether a rider should trust a MARTA route right now or take an Uber. Use when asked if a route is trustworthy, bus vs Uber, or making a class/appointment. Returns take_bus / take_uber / toss_up / no_service with on-time %, ghost no-shows, and last vehicle.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        route: {
+          type: Type.STRING,
+          description: "MARTA route short name (e.g. '46', '20', 'GOLD').",
+        },
+        arrive_by: {
+          type: Type.STRING,
+          description: "Optional arrival time as HH:MM (e.g. '09:30').",
+        },
+      },
+      required: ["route"],
     },
   },
 ];
@@ -83,13 +108,22 @@ async function runTool(
         Number(args.hours ?? 4)
       );
     case "getGhostBuses":
-      return getGhostBuses(pool);
+      return getGhostBuses(
+        pool,
+        String(args.route ?? args.route_id ?? "").trim() || undefined
+      );
     case "getWorstRoutesToday":
       return getWorstRoutesToday(pool);
     case "getHeadwayGaps":
       return getHeadwayGaps(
         pool,
         String(args.route_id ?? args.route ?? "")
+      );
+    case "getCommuteVerdict":
+      return getCommuteVerdict(
+        pool,
+        String(args.route ?? args.route_id ?? ""),
+        String(args.arrive_by ?? args.arriveBy ?? "").trim() || undefined
       );
     default:
       return { error: `Unknown tool: ${name}` };
@@ -108,9 +142,11 @@ export async function askMartaChat(
   const ai = new GoogleGenAI({ apiKey });
 
   const systemInstruction = [
-    "You are MARTA Receipts, an assistant for Atlanta MARTA bus/rail reliability.",
+    "You are Transit Ledger ATL, an assistant for Atlanta MARTA bus/rail reliability.",
     "Use the provided tools to answer with real data from TimescaleDB.",
-    "Be concise. Cite route ids, on-time %, and delays when available.",
+    "If the user asks whether a route is trustworthy, bus vs Uber, or making a class/appointment, call getCommuteVerdict.",
+    "Ghost buses are scheduled trips that never showed up on GPS — not feed glitches.",
+    "Be concise. Cite route ids, on-time %, ghost counts, and delays when available.",
     "Format answers with light markdown: **bold** for route ids and percentages, numbered lists for rankings.",
     "If data is empty, say the poller may not have run yet.",
   ].join(" ");
@@ -202,9 +238,9 @@ export async function generateReportCard(pool: pg.Pool): Promise<{
 
   const ai = new GoogleGenAI({ apiKey });
   const prompt = [
-    "Write a short plain-English MARTA Reliability Report Card in 3-5 sentences.",
+    "Write a short plain-English Transit Ledger ATL Reliability Report Card in 3-5 sentences.",
     "Name the best and worst routes by on-time %, comment on overall system health,",
-    "and mention any notable ghost buses or service gaps if present.",
+    "and mention any notable ghost buses (scheduled trips that never showed on GPS) or service gaps if present.",
     "Do not use markdown headings or bullet lists — just short paragraphs.",
     "",
     "DATA:",
