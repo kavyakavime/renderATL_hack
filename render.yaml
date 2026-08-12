@@ -1,11 +1,13 @@
 # Render Blueprint — web dashboard + poller cron
 # https://render.com/docs/blueprint-spec
+#
+# DATABASE_URL and GEMINI_API_KEY: set in the Render dashboard (sync: false).
 
 services:
   - type: web
     name: marta-receipts-web
     runtime: node
-    plan: free
+    plan: starter
     buildCommand: npm install
     startCommand: npm run web
     envVars:
@@ -21,7 +23,7 @@ services:
   - type: cron
     name: marta-receipts-poller
     runtime: node
-    plan: free
+    plan: starter
     schedule: "*/1 * * * *"
     buildCommand: npm install && npx tsx -e "import { loadScheduleIndex } from './poller/schedule.js'; await loadScheduleIndex();"
     startCommand: npm run poll
