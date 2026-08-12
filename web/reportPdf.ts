@@ -133,7 +133,8 @@ function drawTable(
 /** Build and stream a PDF report to an Express/Node response. */
 export async function streamReportPdf(
   pool: pg.Pool,
-  res: ServerResponse
+  res: ServerResponse,
+  opts: { inline?: boolean } = {}
 ): Promise<void> {
   const [{ report, generated_at }, routes] = await Promise.all([
     generateReportCard(pool),
@@ -146,7 +147,7 @@ export async function streamReportPdf(
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader(
     "Content-Disposition",
-    `attachment; filename="${filename}"`
+    `${opts.inline ? "inline" : "attachment"}; filename="${filename}"`
   );
 
   const doc = new PDFDocument({

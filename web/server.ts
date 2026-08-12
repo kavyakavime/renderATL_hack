@@ -57,9 +57,10 @@ app.get("/api/report", async (_req, res) => {
   }
 });
 
-app.get("/api/report/pdf", async (_req, res) => {
+app.get("/api/report/pdf", async (req, res) => {
   try {
-    await streamReportPdf(pool, res);
+    const inline = String(req.query.inline || "") === "1";
+    await streamReportPdf(pool, res, { inline });
   } catch (err) {
     console.error("/api/report/pdf", err);
     if (!res.headersSent) {
