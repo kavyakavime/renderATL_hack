@@ -8,7 +8,7 @@ services:
     name: marta-receipts-web
     runtime: node
     plan: starter
-    buildCommand: npm install
+    buildCommand: NPM_CONFIG_PRODUCTION=false npm install
     startCommand: npm run web
     envVars:
       - key: NODE_VERSION
@@ -25,7 +25,7 @@ services:
     runtime: node
     plan: starter
     schedule: "*/1 * * * *"
-    buildCommand: npm install && npx tsx -e "import { loadScheduleIndex } from './poller/schedule.js'; await loadScheduleIndex();"
+    buildCommand: NPM_CONFIG_PRODUCTION=false npm install && npx tsx -e "import { loadScheduleIndex } from './poller/schedule.js'; await loadScheduleIndex();"
     startCommand: npm run poll
     envVars:
       - key: NODE_VERSION
